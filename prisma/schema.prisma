@@ -11,7 +11,7 @@ model License {
   id               String        @id @default(uuid())
   licenseKey       String        @unique
   email            String
-  stripePaymentId  String        @unique
+  stripePaymentId  String?       @unique
   stripeCustomerId String?
   status           LicenseStatus @default(ACTIVE)
   maxDevices       Int           @default(2)

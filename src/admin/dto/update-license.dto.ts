@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, IsInt, Min, IsDateString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsInt, Min, IsDateString, IsEmail } from 'class-validator';
 
 export enum LicenseStatus {
   ACTIVE = 'ACTIVE',
@@ -29,7 +29,7 @@ export class UpdateMaxDevicesDto {
 }
 
 export class CreateLicenseDto {
-  @IsString()
+  @IsEmail()
   email: string;
 
   @IsOptional()
