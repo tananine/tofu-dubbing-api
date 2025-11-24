@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { LicenseService } from './license.service';
+import { LicenseService } from './license.service.js';
 
 describe('LicenseService', () => {
   let service: LicenseService;

@@ -6,3 +6,65 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model License {
+  id               String        @id @default(uuid())
+  licenseKey       String        @unique
+  email            String
+  stripePaymentId  String        @unique
+  stripeCustomerId String?
+  status           LicenseStatus @default(ACTIVE)
+  maxDevices       Int           @default(2)
+  metadata         Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  expiresAt        DateTime?
+  devices          Device[]
+  logs             LicenseLog[]
+
+  @@index([licenseKey, status])
+  @@index([email])
+  @@index([stripePaymentId])
+}
+
+model Device {
+  id          String   @id @default(uuid())
+  licenseId   String
+  license     License  @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  deviceId    String
+  deviceName  String?
+  browserInfo String?
+  ipAddress   String?
+  lastSeenAt  DateTime @default(now())
+  activatedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@unique([licenseId, deviceId])
+  @@index([licenseId])
+  @@index([deviceId])
+}
+
+model LicenseLog {
+  id               String   @id @default(uuid())
+  licenseId        String?
+  license          License? @relation(fields: [licenseId], references: [id], onDelete: SetNull)
+  action           String
+  licenseKey       String?
+  stripePaymentId  String?
+  deviceId         String?
+  ipAddress        String?
+  userAgent        String?
+  metadata         Json?
+  createdAt        DateTime @default(now())
+
+  @@index([licenseId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+enum LicenseStatus {
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  REFUNDED
+}
