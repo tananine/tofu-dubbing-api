@@ -23,7 +23,6 @@ export class PrismaService
 
   async onModuleDestroy() {
     await this.$disconnect();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     await this.pool.end();
   }
 }
