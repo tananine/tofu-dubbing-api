@@ -110,7 +110,7 @@ export class LicenseService {
 
     if (!license) {
       await this.logFailedActivation(dto, ipAddress, 'LICENSE_NOT_FOUND');
-      throw new NotFoundException('License Key ไม่ถูกต้อง');
+      throw new NotFoundException('Invalid license key');
     }
 
     this.validateLicenseStatus(license);
@@ -170,13 +170,13 @@ export class LicenseService {
     const license = await this.findByLicenseKey(dto.licenseKey);
 
     if (!license) {
-      throw new NotFoundException('License Key ไม่ถูกต้อง');
+      throw new NotFoundException('Invalid license key');
     }
 
     const device = await this.findDeviceByCompositeKey(license.id, dto.deviceId);
 
     if (!device) {
-      throw new NotFoundException('Device ไม่พบในระบบ');
+      throw new NotFoundException('Device not found');
     }
 
     await this.removeDevice(device.id);
@@ -299,7 +299,7 @@ export class LicenseService {
 
   private validateLicenseStatus(license: LicenseWithDevices) {
     if (license.status !== 'ACTIVE') {
-      throw new BadRequestException(`License ถูก ${license.status}`);
+      throw new BadRequestException(`License is ${license.status}`);
     }
   }
 
@@ -309,7 +309,7 @@ export class LicenseService {
         where: { id: license.id },
         data: { status: 'EXPIRED' },
       });
-      throw new BadRequestException('License หมดอายุแล้ว');
+      throw new BadRequestException('License has expired');
     }
   }
 
@@ -327,7 +327,7 @@ export class LicenseService {
   private validateDeviceLimit(license: LicenseWithDevices) {
     if (license.devices.length >= license.maxDevices) {
       throw new BadRequestException(
-        `License นี้ใช้งานครบ ${license.maxDevices} เครื่องแล้ว กรุณา deactivate เครื่องเก่าก่อน`,
+        `Maximum device limit of ${license.maxDevices} reached. Please deactivate an existing device first`,
       );
     }
   }
