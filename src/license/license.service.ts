@@ -155,6 +155,27 @@ export class LicenseService {
       return { valid: false, reason: 'DEVICE_NOT_ACTIVATED' };
     }
 
+    if (dto.fingerprint && device.metadata) {
+      const storedFingerprint = (device.metadata as { fingerprint?: string })
+        ?.fingerprint;
+      if (storedFingerprint && storedFingerprint !== dto.fingerprint) {
+        return { valid: false, reason: 'FINGERPRINT_MISMATCH' };
+      }
+    }
+
+    if (
+      dto.fingerprint &&
+      (!device.metadata ||
+        !(device.metadata as { fingerprint?: string })?.fingerprint)
+    ) {
+      await this.prisma.device.update({
+        where: { id: device.id },
+        data: {
+          metadata: { fingerprint: dto.fingerprint },
+        },
+      });
+    }
+
     await this.updateDeviceLastSeen(device.id, ipAddress);
 
     return {
@@ -345,6 +366,27 @@ export class LicenseService {
     dto: ActivateLicenseDto,
     ipAddress?: string,
   ): Promise<ActivationResponse> {
+    if (dto.fingerprint && device.metadata) {
+      const storedFingerprint = (device.metadata as { fingerprint?: string })
+        ?.fingerprint;
+      if (storedFingerprint && storedFingerprint !== dto.fingerprint) {
+        throw new BadRequestException('Device fingerprint mismatch');
+      }
+    }
+
+    if (
+      dto.fingerprint &&
+      (!device.metadata ||
+        !(device.metadata as { fingerprint?: string })?.fingerprint)
+    ) {
+      await this.prisma.device.update({
+        where: { id: device.id },
+        data: {
+          metadata: { fingerprint: dto.fingerprint },
+        },
+      });
+    }
+
     await this.updateDeviceLastSeen(device.id, ipAddress);
     await this.logAction(this.prisma, {
       licenseId: license.id,
@@ -395,6 +437,9 @@ export class LicenseService {
         deviceName: dto.deviceInfo?.name ?? 'Unknown',
         browserInfo: dto.deviceInfo?.browser,
         ipAddress,
+        metadata: dto.fingerprint
+          ? { fingerprint: dto.fingerprint }
+          : undefined,
       },
     });
   }

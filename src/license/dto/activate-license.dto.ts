@@ -44,4 +44,9 @@ export class ActivateLicenseDto {
   @ValidateNested()
   @Type(() => DeviceInfo)
   deviceInfo?: DeviceInfo;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(200)
+  fingerprint?: string;
 }

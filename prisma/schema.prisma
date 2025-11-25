@@ -35,6 +35,7 @@ model Device {
   deviceName  String?
   browserInfo String?
   ipAddress   String?
+  metadata    Json?
   lastSeenAt  DateTime @default(now())
   activatedAt DateTime @default(now())
   createdAt   DateTime @default(now())

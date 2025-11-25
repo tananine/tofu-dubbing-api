@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
 
 export class VerifyLicenseDto {
   @IsString()
@@ -10,4 +10,9 @@ export class VerifyLicenseDto {
   @IsNotEmpty()
   @MaxLength(100)
   deviceId: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(200)
+  fingerprint?: string;
 }
