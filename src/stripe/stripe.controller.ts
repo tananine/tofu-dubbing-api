@@ -1,9 +1,4 @@
-import {
-  Controller,
-  Post,
-  Headers,
-  Req,
-} from '@nestjs/common';
+import { Controller, Post, Headers, Req } from '@nestjs/common';
 import { StripeService } from './stripe.service.js';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';

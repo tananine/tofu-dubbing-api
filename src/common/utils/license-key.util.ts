@@ -1,7 +1,9 @@
 import { randomBytes } from 'crypto';
 import { LICENSE_CONSTANTS } from '../constants.js';
 
-export function generateLicenseKey(prefix: string = LICENSE_CONSTANTS.KEY_PREFIX): string {
+export function generateLicenseKey(
+  prefix: string = LICENSE_CONSTANTS.KEY_PREFIX,
+): string {
   const randomPart = randomBytes(LICENSE_CONSTANTS.KEY_RANDOM_BYTES)
     .toString('hex')
     .toUpperCase();
@@ -15,4 +17,3 @@ export function generateLicenseKey(prefix: string = LICENSE_CONSTANTS.KEY_PREFIX
 
   return `${prefix}-${segments.join('-')}`;
 }
-

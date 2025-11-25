@@ -104,8 +104,6 @@ export class StripeService {
       return LICENSE_CONSTANTS.DEFAULT_MAX_DEVICES;
     }
     const parsed = parseInt(value, 10);
-    return isNaN(parsed)
-      ? LICENSE_CONSTANTS.DEFAULT_MAX_DEVICES
-      : parsed;
+    return isNaN(parsed) ? LICENSE_CONSTANTS.DEFAULT_MAX_DEVICES : parsed;
   }
 }

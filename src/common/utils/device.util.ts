@@ -1,6 +1,9 @@
 import type { Device } from '../../../generated/prisma/client.js';
 
-export function findDeviceById(devices: Device[], deviceId: string): Device | undefined {
+export function findDeviceById(
+  devices: Device[],
+  deviceId: string,
+): Device | undefined {
   return devices.find((device) => device.deviceId === deviceId);
 }
 
@@ -25,7 +28,8 @@ export function extractFingerprint(metadata: unknown): string | undefined {
   return metadataObj.fingerprint;
 }
 
-export function createFingerprintMetadata(fingerprint: string): { fingerprint: string } {
+export function createFingerprintMetadata(fingerprint: string): {
+  fingerprint: string;
+} {
   return { fingerprint };
 }
-
