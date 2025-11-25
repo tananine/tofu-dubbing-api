@@ -2,10 +2,14 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
+import {
+  AdminKeyNotConfiguredException,
+  InvalidAuthorizationHeaderException,
+  InvalidAdminKeyException,
+} from '../../common/exceptions/admin.exceptions.js';
 
 @Injectable()
 export class AdminAuthGuard implements CanActivate {
@@ -16,22 +20,21 @@ export class AdminAuthGuard implements CanActivate {
     const adminKey = this.configService.get<string>('ADMIN_API_KEY');
 
     if (!adminKey) {
-      throw new UnauthorizedException('Admin key not configured');
+      throw new AdminKeyNotConfiguredException();
     }
 
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Invalid authorization header');
+      throw new InvalidAuthorizationHeaderException();
     }
 
     const token = authHeader.substring(7);
 
     if (token !== adminKey) {
-      throw new UnauthorizedException('Invalid admin key');
+      throw new InvalidAdminKeyException();
     }
 
     return true;
   }
 }
-

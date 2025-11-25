@@ -2,12 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { LicenseService } from '../license/license.service.js';
+import {
+  LICENSE_CONSTANTS,
+  STRIPE_CONFIG,
+  ERROR_CODES,
+} from '../common/constants.js';
 
 @Injectable()
 export class StripeService {
   private readonly stripe: Stripe;
   private readonly logger = new Logger(StripeService.name);
-  private readonly DEFAULT_MAX_DEVICES = 2;
 
   constructor(
     private readonly configService: ConfigService,
@@ -18,7 +22,7 @@ export class StripeService {
 
   private initializeStripe(): Stripe {
     const apiKey = this.getRequiredConfig('STRIPE_SECRET_KEY');
-    return new Stripe(apiKey, { apiVersion: '2025-11-17.clover' });
+    return new Stripe(apiKey, { apiVersion: STRIPE_CONFIG.API_VERSION });
   }
 
   private getRequiredConfig(key: string): string {
@@ -43,11 +47,12 @@ export class StripeService {
   }
 
   private async processEvent(event: Stripe.Event) {
-    const handlers: Record<string, (data: any) => Promise<void>> = {
-      'payment_intent.succeeded': (data) => this.handlePaymentSuccess(data),
-      'charge.refunded': (data) => this.handleRefund(data),
+    const handlers: Record<string, (data: unknown) => Promise<void>> = {
+      'payment_intent.succeeded': (data) =>
+        this.handlePaymentSuccess(data as Stripe.PaymentIntent),
+      'charge.refunded': (data) => this.handleRefund(data as Stripe.Charge),
       'payment_intent.payment_failed': (data) =>
-        this.logPaymentFailure(data),
+        this.logPaymentFailure(data as Stripe.PaymentIntent),
     };
 
     const handler = handlers[event.type];
@@ -64,7 +69,7 @@ export class StripeService {
 
     if (!email) {
       this.logger.error(
-        `Missing email in payment metadata: ${paymentIntent.id}`,
+        `${ERROR_CODES.MISSING_EMAIL_IN_PAYMENT}: ${paymentIntent.id}`,
       );
       return;
     }
@@ -81,7 +86,9 @@ export class StripeService {
 
   private async handleRefund(charge: Stripe.Charge) {
     if (!charge.payment_intent) {
-      this.logger.warn(`Refund without payment_intent: ${charge.id}`);
+      this.logger.warn(
+        `${ERROR_CODES.REFUND_WITHOUT_PAYMENT_INTENT}: ${charge.id}`,
+      );
       return;
     }
 
@@ -93,12 +100,16 @@ export class StripeService {
   }
 
   private parseMaxDevices(value?: string): number {
-    if (!value) return this.DEFAULT_MAX_DEVICES;
+    if (!value) {
+      return LICENSE_CONSTANTS.DEFAULT_MAX_DEVICES;
+    }
     const parsed = parseInt(value, 10);
-    return isNaN(parsed) ? this.DEFAULT_MAX_DEVICES : parsed;
+    return isNaN(parsed)
+      ? LICENSE_CONSTANTS.DEFAULT_MAX_DEVICES
+      : parsed;
   }
 
-  async getUnprocessedPayments(days = 7) {
+  async getUnprocessedPayments(days: number = STRIPE_CONFIG.UNPROCESSED_PAYMENTS_DAYS) {
     return this.licenseService.getUnprocessedPayments(this.stripe, days);
   }
 }

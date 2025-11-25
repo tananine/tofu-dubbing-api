@@ -3,7 +3,6 @@ import {
   Post,
   Get,
   Headers,
-  BadRequestException,
   Req,
   Query,
   ParseIntPipe,
@@ -12,6 +11,12 @@ import {
 import { StripeService } from './stripe.service.js';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
+import {
+  MissingWebhookSignatureException,
+  MissingRawBodyException,
+  WebhookProcessingException,
+} from '../common/exceptions/stripe.exceptions.js';
+import { STRIPE_CONFIG } from '../common/constants.js';
 
 @Controller('stripe')
 export class StripeController {
@@ -26,14 +31,17 @@ export class StripeController {
 
     try {
       return await this.stripeService.handleWebhook(signature, req.rawBody!);
-    } catch (err) {
-      throw new BadRequestException(`Webhook Error: ${err.message}`);
+    } catch (error) {
+      throw new WebhookProcessingException(
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   }
 
   @Get('admin/unprocessed-payments')
   getUnprocessedPayments(
-    @Query('days', new DefaultValuePipe(7), ParseIntPipe) days: number,
+    @Query('days', new DefaultValuePipe(STRIPE_CONFIG.UNPROCESSED_PAYMENTS_DAYS), ParseIntPipe)
+    days: number,
   ) {
     return this.stripeService.getUnprocessedPayments(days);
   }
@@ -43,11 +51,11 @@ export class StripeController {
     rawBody: Buffer | undefined,
   ) {
     if (!signature) {
-      throw new BadRequestException('Missing stripe-signature header');
+      throw new MissingWebhookSignatureException();
     }
 
     if (!rawBody) {
-      throw new BadRequestException('Missing raw body');
+      throw new MissingRawBodyException();
     }
   }
 }

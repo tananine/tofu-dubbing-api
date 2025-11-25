@@ -1,7 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { LicenseStatus } from '../../generated/prisma/client.js';
-import { randomBytes } from 'crypto';
+import {
+  LICENSE_CONSTANTS,
+  LICENSE_STATUS,
+  LICENSE_ACTIONS,
+  PAGINATION_DEFAULTS,
+} from '../common/constants.js';
+import { LicenseNotFoundException } from '../common/exceptions/license.exceptions.js';
+import { generateLicenseKey } from '../common/utils/license-key.util.js';
+import {
+  calculateSkip,
+  createPaginationResult,
+} from '../common/utils/pagination.util.js';
 
 @Injectable()
 export class AdminService {
@@ -16,7 +27,7 @@ export class AdminService {
       licensesByStatus,
     ] = await Promise.all([
       this.prisma.license.count(),
-      this.prisma.license.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.license.count({ where: { status: LICENSE_STATUS.ACTIVE } }),
       this.prisma.device.count(),
       this.prisma.licenseLog.count({
         where: {
@@ -46,8 +57,12 @@ export class AdminService {
     };
   }
 
-  async getAllLicenses(page = 1, limit = 50, status?: LicenseStatus) {
-    const skip = (page - 1) * limit;
+  async getAllLicenses(
+    page: number = PAGINATION_DEFAULTS.PAGE,
+    limit: number = PAGINATION_DEFAULTS.LICENSE_LIMIT,
+    status?: LicenseStatus,
+  ) {
+    const skip = calculateSkip(page, limit);
     const where = status ? { status } : {};
 
     const [licenses, total] = await Promise.all([
@@ -70,19 +85,11 @@ export class AdminService {
       this.prisma.license.count({ where }),
     ]);
 
-    return {
-      licenses,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return createPaginationResult(licenses, total, { page, limit });
   }
 
   async getLicenseById(id: string) {
-    return this.prisma.license.findUnique({
+    const license = await this.prisma.license.findUnique({
       where: { id },
       include: {
         devices: {
@@ -94,9 +101,25 @@ export class AdminService {
         },
       },
     });
+
+    if (!license) {
+      throw new LicenseNotFoundException();
+    }
+
+    return license;
   }
 
-  async updateLicenseStatus(id: string, status: LicenseStatus, reason?: string) {
+  async updateLicenseStatus(
+    id: string,
+    status: LicenseStatus,
+    reason?: string,
+  ) {
+    const license = await this.prisma.license.findUnique({ where: { id } });
+
+    if (!license) {
+      throw new LicenseNotFoundException();
+    }
+
     return this.prisma.$transaction([
       this.prisma.license.update({
         where: { id },
@@ -105,7 +128,7 @@ export class AdminService {
       this.prisma.licenseLog.create({
         data: {
           licenseId: id,
-          action: `LICENSE_STATUS_CHANGED_${status}`,
+          action: `${LICENSE_ACTIONS.LICENSE_STATUS_CHANGED}_${status}`,
           metadata: { reason, changedBy: 'ADMIN' },
         },
       }),
@@ -113,6 +136,12 @@ export class AdminService {
   }
 
   async updateLicenseExpiry(id: string, expiresAt: Date | null) {
+    const license = await this.prisma.license.findUnique({ where: { id } });
+
+    if (!license) {
+      throw new LicenseNotFoundException();
+    }
+
     return this.prisma.license.update({
       where: { id },
       data: { expiresAt },
@@ -120,14 +149,23 @@ export class AdminService {
   }
 
   async updateMaxDevices(id: string, maxDevices: number) {
+    const license = await this.prisma.license.findUnique({ where: { id } });
+
+    if (!license) {
+      throw new LicenseNotFoundException();
+    }
+
     return this.prisma.license.update({
       where: { id },
       data: { maxDevices },
     });
   }
 
-  async getAllDevices(page = 1, limit = 50) {
-    const skip = (page - 1) * limit;
+  async getAllDevices(
+    page: number = PAGINATION_DEFAULTS.PAGE,
+    limit: number = PAGINATION_DEFAULTS.DEVICE_LIMIT,
+  ) {
+    const skip = calculateSkip(page, limit);
 
     const [devices, total] = await Promise.all([
       this.prisma.device.findMany({
@@ -147,15 +185,7 @@ export class AdminService {
       this.prisma.device.count(),
     ]);
 
-    return {
-      devices,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return createPaginationResult(devices, total, { page, limit });
   }
 
   async removeDevice(deviceId: string) {
@@ -165,7 +195,7 @@ export class AdminService {
     });
 
     if (!device) {
-      return { success: false, message: 'Device not found' };
+      throw new LicenseNotFoundException();
     }
 
     await this.prisma.$transaction([
@@ -175,7 +205,7 @@ export class AdminService {
       this.prisma.licenseLog.create({
         data: {
           licenseId: device.licenseId,
-          action: 'DEVICE_REMOVED_BY_ADMIN',
+          action: LICENSE_ACTIONS.DEVICE_REMOVED_BY_ADMIN,
           deviceId: device.deviceId,
           metadata: { removedBy: 'ADMIN' },
         },
@@ -185,8 +215,12 @@ export class AdminService {
     return { success: true, message: 'Device removed' };
   }
 
-  async getLogs(page = 1, limit = 100, action?: string) {
-    const skip = (page - 1) * limit;
+  async getLogs(
+    page: number = PAGINATION_DEFAULTS.PAGE,
+    limit: number = PAGINATION_DEFAULTS.LOG_LIMIT,
+    action?: string,
+  ) {
+    const skip = calculateSkip(page, limit);
     const where = action ? { action } : {};
 
     const [logs, total] = await Promise.all([
@@ -207,15 +241,7 @@ export class AdminService {
       this.prisma.licenseLog.count({ where }),
     ]);
 
-    return {
-      logs,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return createPaginationResult(logs, total, { page, limit });
   }
 
   async searchLicenses(query: string) {
@@ -237,22 +263,22 @@ export class AdminService {
           },
         },
       },
-      take: 20,
+      take: PAGINATION_DEFAULTS.SEARCH_LIMIT,
     });
   }
 
   async deleteLicense(id: string) {
+    const license = await this.prisma.license.findUnique({ where: { id } });
+
+    if (!license) {
+      throw new LicenseNotFoundException();
+    }
+
     await this.prisma.license.delete({
       where: { id },
     });
 
     return { success: true, message: 'License deleted' };
-  }
-
-  private generateLicenseKey(): string {
-    const prefix = 'TF';
-    const randomPart = randomBytes(16).toString('hex').toUpperCase();
-    return `${prefix}-${randomPart.slice(0, 8)}-${randomPart.slice(8, 16)}-${randomPart.slice(16, 24)}-${randomPart.slice(24, 32)}`;
   }
 
   async createLicense(data: {
@@ -261,23 +287,24 @@ export class AdminService {
     maxDevices?: number;
     expiresAt?: Date;
   }) {
-    const licenseKey = this.generateLicenseKey();
+    const licenseKey = generateLicenseKey();
 
     const license = await this.prisma.license.create({
       data: {
         licenseKey,
         email: data.email,
         stripePaymentId: data.stripePaymentId,
-        maxDevices: data.maxDevices || 3,
+        maxDevices:
+          data.maxDevices ?? LICENSE_CONSTANTS.ADMIN_DEFAULT_MAX_DEVICES,
         expiresAt: data.expiresAt,
-        status: 'ACTIVE',
+        status: LICENSE_STATUS.ACTIVE,
       },
     });
 
     await this.prisma.licenseLog.create({
       data: {
         licenseId: license.id,
-        action: 'LICENSE_CREATED_BY_ADMIN',
+        action: LICENSE_ACTIONS.LICENSE_CREATED_BY_ADMIN,
         metadata: { createdBy: 'ADMIN' },
       },
     });
@@ -285,4 +312,3 @@ export class AdminService {
     return license;
   }
 }
-

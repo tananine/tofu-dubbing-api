@@ -10,7 +10,6 @@ import {
   UseGuards,
   ParseIntPipe,
   DefaultValuePipe,
-  NotFoundException,
 } from '@nestjs/common';
 import { AdminService } from './admin.service.js';
 import { AdminAuthGuard } from './guards/admin-auth.guard.js';
@@ -21,6 +20,7 @@ import {
   CreateLicenseDto,
   LicenseStatus,
 } from './dto/update-license.dto.js';
+import { PAGINATION_DEFAULTS } from '../common/constants.js';
 
 @Controller('admin')
 @UseGuards(AdminAuthGuard)
@@ -34,8 +34,10 @@ export class AdminController {
 
   @Get('licenses')
   async getAllLicenses(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+    @Query('page', new DefaultValuePipe(PAGINATION_DEFAULTS.PAGE), ParseIntPipe)
+    page: number,
+    @Query('limit', new DefaultValuePipe(PAGINATION_DEFAULTS.LICENSE_LIMIT), ParseIntPipe)
+    limit: number,
     @Query('status') status?: LicenseStatus,
   ) {
     return this.adminService.getAllLicenses(page, limit, status);
@@ -59,11 +61,7 @@ export class AdminController {
 
   @Get('licenses/:id')
   async getLicenseById(@Param('id') id: string) {
-    const license = await this.adminService.getLicenseById(id);
-    if (!license) {
-      throw new NotFoundException('License not found');
-    }
-    return license;
+    return this.adminService.getLicenseById(id);
   }
 
   @Patch('licenses/:id/status')
@@ -110,8 +108,10 @@ export class AdminController {
 
   @Get('devices')
   async getAllDevices(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+    @Query('page', new DefaultValuePipe(PAGINATION_DEFAULTS.PAGE), ParseIntPipe)
+    page: number,
+    @Query('limit', new DefaultValuePipe(PAGINATION_DEFAULTS.DEVICE_LIMIT), ParseIntPipe)
+    limit: number,
   ) {
     return this.adminService.getAllDevices(page, limit);
   }
@@ -123,11 +123,12 @@ export class AdminController {
 
   @Get('logs')
   async getLogs(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(100), ParseIntPipe) limit: number,
+    @Query('page', new DefaultValuePipe(PAGINATION_DEFAULTS.PAGE), ParseIntPipe)
+    page: number,
+    @Query('limit', new DefaultValuePipe(PAGINATION_DEFAULTS.LOG_LIMIT), ParseIntPipe)
+    limit: number,
     @Query('action') action?: string,
   ) {
     return this.adminService.getLogs(page, limit, action);
   }
 }
-
