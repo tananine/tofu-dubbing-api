@@ -55,17 +55,17 @@ export class LicenseService {
   generateLicenseKey(): string {
     const randomPart = randomBytes(16).toString('hex');
     const matched = randomPart.toUpperCase().match(/.{1,4}/g);
-    
+
     if (!matched) {
       throw new Error('Failed to generate license key');
     }
-    
+
     return `TOFU-${matched.join('-')}`;
   }
 
   async createLicense(dto: CreateLicenseDto) {
     const existing = await this.findByPaymentId(dto.stripePaymentId);
-    
+
     if (existing) {
       return existing;
     }
@@ -138,7 +138,11 @@ export class LicenseService {
     }
 
     if (license.status !== 'ACTIVE') {
-      return { valid: false, reason: 'LICENSE_NOT_ACTIVE', status: license.status };
+      return {
+        valid: false,
+        reason: 'LICENSE_NOT_ACTIVE',
+        status: license.status,
+      };
     }
 
     if (await this.isExpired(license)) {
@@ -372,7 +376,10 @@ export class LicenseService {
     return {
       success: true,
       message: 'Activated successfully',
-      license: this.buildLicenseResponse(license, license.devices.length + 1),
+      license: this.buildLicenseResponse(
+        license,
+        license.devices.length + 1,
+      ),
     };
   }
 

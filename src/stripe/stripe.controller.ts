@@ -38,7 +38,10 @@ export class StripeController {
     return this.stripeService.getUnprocessedPayments(days);
   }
 
-  private validateWebhookRequest(signature: string | undefined, rawBody: Buffer | undefined) {
+  private validateWebhookRequest(
+    signature: string | undefined,
+    rawBody: Buffer | undefined,
+  ) {
     if (!signature) {
       throw new BadRequestException('Missing stripe-signature header');
     }

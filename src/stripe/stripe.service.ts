@@ -31,7 +31,11 @@ export class StripeService {
 
   async handleWebhook(signature: string, rawBody: Buffer) {
     const webhookSecret = this.getRequiredConfig('STRIPE_WEBHOOK_SECRET');
-    const event = this.stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    const event = this.stripe.webhooks.constructEvent(
+      rawBody,
+      signature,
+      webhookSecret,
+    );
 
     await this.processEvent(event);
 
@@ -42,11 +46,12 @@ export class StripeService {
     const handlers: Record<string, (data: any) => Promise<void>> = {
       'payment_intent.succeeded': (data) => this.handlePaymentSuccess(data),
       'charge.refunded': (data) => this.handleRefund(data),
-      'payment_intent.payment_failed': (data) => this.logPaymentFailure(data),
+      'payment_intent.payment_failed': (data) =>
+        this.logPaymentFailure(data),
     };
 
     const handler = handlers[event.type];
-    
+
     if (handler) {
       await handler(event.data.object);
     } else {
@@ -58,7 +63,9 @@ export class StripeService {
     const email = paymentIntent.metadata?.email;
 
     if (!email) {
-      this.logger.error(`Missing email in payment metadata: ${paymentIntent.id}`);
+      this.logger.error(
+        `Missing email in payment metadata: ${paymentIntent.id}`,
+      );
       return;
     }
 
