@@ -1,9 +1,4 @@
-import type { PrismaClient, Prisma } from '../../../generated/prisma/client.js';
-
-export type TransactionClient = Omit<
-  PrismaClient,
-  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
->;
+import type { Prisma } from '../../../generated/prisma/client.js';
 
 export type JsonValue = Prisma.InputJsonValue;
 
