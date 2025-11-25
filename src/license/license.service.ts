@@ -177,7 +177,10 @@ export class LicenseService {
       throw new NotFoundException('Invalid license key');
     }
 
-    const device = await this.findDeviceByCompositeKey(license.id, dto.deviceId);
+    const device = await this.findDeviceByCompositeKey(
+      license.id,
+      dto.deviceId,
+    );
 
     if (!device) {
       throw new NotFoundException('Device not found');
@@ -376,10 +379,7 @@ export class LicenseService {
     return {
       success: true,
       message: 'Activated successfully',
-      license: this.buildLicenseResponse(
-        license,
-        license.devices.length + 1,
-      ),
+      license: this.buildLicenseResponse(license, license.devices.length + 1),
     };
   }
 
