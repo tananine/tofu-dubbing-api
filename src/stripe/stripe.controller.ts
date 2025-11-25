@@ -1,12 +1,8 @@
 import {
   Controller,
   Post,
-  Get,
   Headers,
   Req,
-  Query,
-  ParseIntPipe,
-  DefaultValuePipe,
 } from '@nestjs/common';
 import { StripeService } from './stripe.service.js';
 import type { RawBodyRequest } from '@nestjs/common';
@@ -16,7 +12,6 @@ import {
   MissingRawBodyException,
   WebhookProcessingException,
 } from '../common/exceptions/stripe.exceptions.js';
-import { STRIPE_CONFIG } from '../common/constants.js';
 
 @Controller('stripe')
 export class StripeController {
@@ -36,14 +31,6 @@ export class StripeController {
         error instanceof Error ? error : new Error(String(error)),
       );
     }
-  }
-
-  @Get('admin/unprocessed-payments')
-  getUnprocessedPayments(
-    @Query('days', new DefaultValuePipe(STRIPE_CONFIG.UNPROCESSED_PAYMENTS_DAYS), ParseIntPipe)
-    days: number,
-  ) {
-    return this.stripeService.getUnprocessedPayments(days);
   }
 
   private validateWebhookRequest(

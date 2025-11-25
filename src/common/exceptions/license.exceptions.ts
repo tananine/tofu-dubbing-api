@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ERROR_CODES } from '../constants.js';
 
 export class LicenseNotFoundException extends NotFoundException {
@@ -58,4 +55,3 @@ export class FingerprintMismatchException extends BadRequestException {
     });
   }
 }
-

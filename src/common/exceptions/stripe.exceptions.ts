@@ -22,7 +22,7 @@ export class MissingRawBodyException extends BadRequestException {
 export class WebhookProcessingException extends BadRequestException {
   constructor(originalError: Error) {
     super({
-      code: 'WEBHOOK_PROCESSING_ERROR',
+      code: ERROR_CODES.WEBHOOK_PROCESSING_ERROR,
       message: `Webhook processing failed: ${originalError.message}`,
     });
   }

@@ -108,8 +108,4 @@ export class StripeService {
       ? LICENSE_CONSTANTS.DEFAULT_MAX_DEVICES
       : parsed;
   }
-
-  async getUnprocessedPayments(days: number = STRIPE_CONFIG.UNPROCESSED_PAYMENTS_DAYS) {
-    return this.licenseService.getUnprocessedPayments(this.stripe, days);
-  }
 }
