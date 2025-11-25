@@ -122,7 +122,22 @@ export class LicenseService {
       return this.reactivateDevice(license, existingDevice, dto, ipAddress);
     }
 
-    this.validateDeviceLimit(license);
+    if (license.devices.length >= license.maxDevices) {
+      const oldestDevice = this.findOldestDevice(license.devices);
+      if (oldestDevice) {
+        await this.removeDevice(oldestDevice.id);
+        await this.logAction(this.prisma, {
+          licenseId: license.id,
+          action: 'DEVICE_AUTO_DEACTIVATED',
+          licenseKey: dto.licenseKey,
+          deviceId: oldestDevice.deviceId,
+          ipAddress,
+          metadata: {
+            reason: 'Device limit reached, oldest device deactivated',
+          },
+        });
+      }
+    }
 
     return this.activateNewDevice(license, dto, ipAddress);
   }
@@ -352,12 +367,14 @@ export class LicenseService {
     return false;
   }
 
-  private validateDeviceLimit(license: LicenseWithDevices) {
-    if (license.devices.length >= license.maxDevices) {
-      throw new BadRequestException(
-        `Maximum device limit of ${license.maxDevices} reached. Please deactivate an existing device first`,
-      );
-    }
+  private findOldestDevice(devices: Device[]): Device | null {
+    if (devices.length === 0) return null;
+
+    return devices.reduce((oldest, current) => {
+      const oldestLastSeen = new Date(oldest.lastSeenAt).getTime();
+      const currentLastSeen = new Date(current.lastSeenAt).getTime();
+      return currentLastSeen < oldestLastSeen ? current : oldest;
+    });
   }
 
   private async reactivateDevice(
