@@ -40,10 +40,7 @@ export class LicenseExpiredException extends BadRequestException {
 
 export class DeviceNotFoundException extends NotFoundException {
   constructor() {
-    super({
-      code: ERROR_CODES.DEVICE_NOT_FOUND,
-      message: 'Device not found',
-    });
+    super({ code: ERROR_CODES.DEVICE_NOT_FOUND, message: 'Device not found' });
   }
 }
 

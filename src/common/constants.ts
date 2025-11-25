@@ -44,8 +44,6 @@ export const THROTTLE_LIMITS = {
   VERIFY: { limit: 30, ttl: 60000 },
   DEACTIVATE: { limit: 10, ttl: 60000 },
   INFO: { limit: 20, ttl: 60000 },
-};
-
-export const STRIPE_CONFIG = {
-  API_VERSION: '2025-11-17.clover',
 } as const;
+
+export const STRIPE_API_VERSION = '2025-11-17.clover' as const;

@@ -12,18 +12,15 @@ export class MissingWebhookSignatureException extends BadRequestException {
 
 export class MissingRawBodyException extends BadRequestException {
   constructor() {
-    super({
-      code: ERROR_CODES.MISSING_RAW_BODY,
-      message: 'Missing raw body',
-    });
+    super({ code: ERROR_CODES.MISSING_RAW_BODY, message: 'Missing raw body' });
   }
 }
 
 export class WebhookProcessingException extends BadRequestException {
-  constructor(originalError: Error) {
+  constructor(error: Error) {
     super({
       code: ERROR_CODES.WEBHOOK_PROCESSING_ERROR,
-      message: `Webhook processing failed: ${originalError.message}`,
+      message: `Webhook processing failed: ${error.message}`,
     });
   }
 }

@@ -1,15 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import type {
-  License,
-  Device,
-  PrismaClient,
-} from '../../generated/prisma/client.js';
-
-type TransactionClient = Omit<
-  PrismaClient,
-  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
->;
+import type { License, Device, Prisma } from '../../generated/prisma/client.js';
 import {
   CreateLicenseDto,
   ActivateLicenseDto,
@@ -36,41 +27,17 @@ import {
   extractFingerprint,
   createFingerprintMetadata,
 } from '../common/utils/device.util.js';
-import {
-  checkAndUpdateExpiration,
-  isLicenseExpired,
-} from '../common/utils/license-status.util.js';
+import { validateLicenseExpiration } from '../common/utils/license-status.util.js';
+import type {
+  TransactionClient,
+  LicenseResponse,
+  ActivationResponse,
+  VerificationResponse,
+  DeactivationResponse,
+} from '../common/types/index.js';
 
 interface LicenseWithDevices extends License {
   devices: Device[];
-}
-
-export interface LicenseResponse {
-  status: string;
-  expiresAt: Date | null;
-  devicesUsed: number;
-  maxDevices: number;
-}
-
-export interface ActivationResponse {
-  success: boolean;
-  message: string;
-  license: LicenseResponse;
-}
-
-export interface VerificationResponse {
-  valid: boolean;
-  reason?: string;
-  status?: string;
-  expiresAt?: Date | null;
-  gracePeriodHours?: number;
-  devicesUsed?: number;
-  maxDevices?: number;
-}
-
-export interface DeactivationResponse {
-  success: boolean;
-  message: string;
 }
 
 @Injectable()
@@ -78,24 +45,30 @@ export class LicenseService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createLicense(dto: CreateLicenseDto): Promise<License> {
-    const existingLicense = await this.findByPaymentId(dto.stripePaymentId);
+    const existingLicense = await this.prisma.license.findUnique({
+      where: { stripePaymentId: dto.stripePaymentId },
+    });
 
     if (existingLicense) {
       return existingLicense;
     }
 
-    const licenseKey = generateLicenseKey();
-
     return this.prisma.$transaction(async (tx: TransactionClient) => {
-      await this.logAction(tx, {
-        action: LICENSE_ACTIONS.LICENSE_CREATE_ATTEMPT,
-        stripePaymentId: dto.stripePaymentId,
-        metadata: dto as unknown as Record<string, unknown>,
+      await tx.licenseLog.create({
+        data: {
+          action: LICENSE_ACTIONS.LICENSE_CREATE_ATTEMPT,
+          stripePaymentId: dto.stripePaymentId,
+          metadata: {
+            email: dto.email,
+            maxDevices: dto.maxDevices,
+            stripeCustomerId: dto.stripeCustomerId,
+          } as Prisma.InputJsonValue,
+        },
       });
 
-      const license = (await tx.license.create({
+      const license = await tx.license.create({
         data: {
-          licenseKey,
+          licenseKey: generateLicenseKey(),
           email: dto.email,
           stripePaymentId: dto.stripePaymentId,
           stripeCustomerId: dto.stripeCustomerId,
@@ -103,13 +76,15 @@ export class LicenseService {
           expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
           status: LICENSE_STATUS.ACTIVE,
         },
-      })) as unknown as License;
+      });
 
-      await this.logAction(tx, {
-        licenseId: (license as { id: string }).id,
-        action: LICENSE_ACTIONS.LICENSE_CREATED,
-        licenseKey: (license as { licenseKey: string }).licenseKey,
-        stripePaymentId: dto.stripePaymentId,
+      await tx.licenseLog.create({
+        data: {
+          licenseId: license.id,
+          action: LICENSE_ACTIONS.LICENSE_CREATED,
+          licenseKey: license.licenseKey,
+          stripePaymentId: dto.stripePaymentId,
+        },
       });
 
       return license;
@@ -131,8 +106,11 @@ export class LicenseService {
       throw new InvalidLicenseKeyException();
     }
 
-    this.validateLicenseStatus(license);
-    await checkAndUpdateExpiration(this.prisma, license);
+    if (license.status !== LICENSE_STATUS.ACTIVE) {
+      throw new LicenseNotActiveException(license.status);
+    }
+
+    await validateLicenseExpiration(this.prisma, license);
 
     const existingDevice = findDeviceById(license.devices, dto.deviceId);
 
@@ -140,27 +118,8 @@ export class LicenseService {
       return this.reactivateDevice(license, existingDevice, dto, ipAddress);
     }
 
-    const licenseTyped = license as unknown as LicenseWithDevices;
-    if (licenseTyped.devices.length >= licenseTyped.maxDevices) {
-      const oldestDevice = findOldestDevice(licenseTyped.devices);
-      if (oldestDevice) {
-        await this.prisma.$transaction(async (tx: TransactionClient) => {
-          const oldestDeviceTyped = oldestDevice as unknown as Device;
-          await tx.device.delete({
-            where: { id: (oldestDeviceTyped as { id: string }).id },
-          });
-          await this.logAction(tx, {
-            licenseId: (licenseTyped as { id: string }).id,
-            action: LICENSE_ACTIONS.DEVICE_AUTO_DEACTIVATED,
-            licenseKey: dto.licenseKey,
-            deviceId: (oldestDeviceTyped as { deviceId: string }).deviceId,
-            ipAddress,
-            metadata: {
-              reason: 'Device limit reached, oldest device deactivated',
-            },
-          });
-        });
-      }
+    if (license.devices.length >= license.maxDevices) {
+      await this.removeOldestDevice(license, dto.licenseKey, ipAddress);
     }
 
     return this.activateNewDevice(license, dto, ipAddress);
@@ -184,7 +143,7 @@ export class LicenseService {
       };
     }
 
-    if (await isLicenseExpired(this.prisma, license)) {
+    if (await validateLicenseExpiration(this.prisma, license, false)) {
       return { valid: false, reason: ERROR_CODES.LICENSE_EXPIRED };
     }
 
@@ -194,36 +153,17 @@ export class LicenseService {
       return { valid: false, reason: ERROR_CODES.DEVICE_NOT_ACTIVATED };
     }
 
-    const deviceTyped = device as unknown as Device;
-    if (dto.fingerprint) {
-      const storedFingerprint = extractFingerprint(
-        (deviceTyped as { metadata: unknown }).metadata,
-      );
-      if (storedFingerprint && storedFingerprint !== dto.fingerprint) {
-        return { valid: false, reason: ERROR_CODES.FINGERPRINT_MISMATCH };
-      }
-    }
+    const storedFingerprint = extractFingerprint(device.metadata);
 
     if (
       dto.fingerprint &&
-      !extractFingerprint((deviceTyped as { metadata: unknown }).metadata)
+      storedFingerprint &&
+      storedFingerprint !== dto.fingerprint
     ) {
-      await this.prisma.$transaction(async (tx: TransactionClient) => {
-        await tx.device.update({
-          where: { id: (deviceTyped as { id: string }).id },
-          data: {
-            metadata: createFingerprintMetadata(dto.fingerprint!),
-            lastSeenAt: new Date(),
-            ipAddress,
-          },
-        });
-      });
-    } else {
-      await this.updateDeviceLastSeen(
-        (deviceTyped as { id: string }).id,
-        ipAddress,
-      );
+      return { valid: false, reason: ERROR_CODES.FINGERPRINT_MISMATCH };
     }
+
+    await this.updateDeviceActivity(device, dto.fingerprint, ipAddress);
 
     return {
       valid: true,
@@ -239,33 +179,34 @@ export class LicenseService {
     dto: DeactivateLicenseDto,
     ipAddress?: string,
   ): Promise<DeactivationResponse> {
-    const license = await this.findByLicenseKey(dto.licenseKey);
+    const license = await this.prisma.license.findUnique({
+      where: { licenseKey: dto.licenseKey },
+    });
 
     if (!license) {
       throw new InvalidLicenseKeyException();
     }
 
-    const licenseTyped = license as unknown as License;
-    const device = await this.findDeviceByCompositeKey(
-      (licenseTyped as { id: string }).id,
-      dto.deviceId,
-    );
+    const device = await this.prisma.device.findUnique({
+      where: {
+        licenseId_deviceId: { licenseId: license.id, deviceId: dto.deviceId },
+      },
+    });
 
     if (!device) {
       throw new DeviceNotFoundException();
     }
 
-    const deviceTyped = device as unknown as Device;
     await this.prisma.$transaction(async (tx: TransactionClient) => {
-      await tx.device.delete({
-        where: { id: (deviceTyped as { id: string }).id },
-      });
-      await this.logAction(tx, {
-        licenseId: (licenseTyped as { id: string }).id,
-        action: LICENSE_ACTIONS.DEVICE_DEACTIVATED,
-        licenseKey: dto.licenseKey,
-        deviceId: dto.deviceId,
-        ipAddress,
+      await tx.device.delete({ where: { id: device.id } });
+      await tx.licenseLog.create({
+        data: {
+          licenseId: license.id,
+          action: LICENSE_ACTIONS.DEVICE_DEACTIVATED,
+          licenseKey: dto.licenseKey,
+          deviceId: dto.deviceId,
+          ipAddress,
+        },
       });
     });
 
@@ -293,61 +234,43 @@ export class LicenseService {
       throw new LicenseNotFoundException();
     }
 
-    const licenseData = license as unknown as {
-      licenseKey: string;
-      email: string;
-      status: string;
-      expiresAt: Date | null;
-      devices: unknown[];
-      maxDevices: number;
-      createdAt: Date;
-    };
-
     return {
-      licenseKey: licenseData.licenseKey,
-      email: licenseData.email,
-      status: licenseData.status,
-      expiresAt: licenseData.expiresAt,
-      devicesUsed: licenseData.devices.length,
-      maxDevices: licenseData.maxDevices,
-      createdAt: licenseData.createdAt,
-      devices: licenseData.devices,
+      licenseKey: license.licenseKey,
+      email: license.email,
+      status: license.status,
+      expiresAt: license.expiresAt,
+      devicesUsed: license.devices.length,
+      maxDevices: license.maxDevices,
+      createdAt: license.createdAt,
+      devices: license.devices,
     };
   }
 
   async refundLicense(stripePaymentId: string) {
-    const license = await this.findByPaymentId(stripePaymentId);
+    const license = await this.prisma.license.findUnique({
+      where: { stripePaymentId },
+    });
 
     if (!license) {
       throw new LicenseNotFoundException();
     }
 
-    const licenseTyped = license as unknown as License;
-    await this.updateLicenseStatus(
-      (licenseTyped as { id: string }).id,
-      LICENSE_STATUS.REFUNDED,
-      {
-        action: LICENSE_ACTIONS.LICENSE_REFUNDED,
-        licenseKey: (licenseTyped as { licenseKey: string }).licenseKey,
-        stripePaymentId,
-      },
-    );
+    await this.prisma.$transaction([
+      this.prisma.license.update({
+        where: { id: license.id },
+        data: { status: LICENSE_STATUS.REFUNDED },
+      }),
+      this.prisma.licenseLog.create({
+        data: {
+          licenseId: license.id,
+          action: LICENSE_ACTIONS.LICENSE_REFUNDED,
+          licenseKey: license.licenseKey,
+          stripePaymentId,
+        },
+      }),
+    ]);
 
     return { success: true };
-  }
-
-  private async findByPaymentId(
-    stripePaymentId: string,
-  ): Promise<License | null> {
-    return this.prisma.license.findUnique({
-      where: { stripePaymentId },
-    }) as Promise<License | null>;
-  }
-
-  private async findByLicenseKey(licenseKey: string): Promise<License | null> {
-    return this.prisma.license.findUnique({
-      where: { licenseKey },
-    }) as Promise<License | null>;
   }
 
   private async findLicenseWithDevices(
@@ -359,19 +282,32 @@ export class LicenseService {
     }) as Promise<LicenseWithDevices | null>;
   }
 
-  private async findDeviceByCompositeKey(
-    licenseId: string,
-    deviceId: string,
-  ): Promise<Device | null> {
-    return this.prisma.device.findUnique({
-      where: { licenseId_deviceId: { licenseId, deviceId } },
-    }) as Promise<Device | null>;
-  }
+  private async removeOldestDevice(
+    license: LicenseWithDevices,
+    licenseKey: string,
+    ipAddress?: string,
+  ): Promise<void> {
+    const oldestDevice = findOldestDevice(license.devices);
 
-  private validateLicenseStatus(license: LicenseWithDevices) {
-    if (license.status !== LICENSE_STATUS.ACTIVE) {
-      throw new LicenseNotActiveException(license.status as string);
+    if (!oldestDevice) {
+      return;
     }
+
+    await this.prisma.$transaction(async (tx: TransactionClient) => {
+      await tx.device.delete({ where: { id: oldestDevice.id } });
+      await tx.licenseLog.create({
+        data: {
+          licenseId: license.id,
+          action: LICENSE_ACTIONS.DEVICE_AUTO_DEACTIVATED,
+          licenseKey,
+          deviceId: oldestDevice.deviceId,
+          ipAddress,
+          metadata: {
+            reason: 'Device limit reached, oldest device deactivated',
+          } as Prisma.InputJsonValue,
+        },
+      });
+    });
   }
 
   private async reactivateDevice(
@@ -380,46 +316,40 @@ export class LicenseService {
     dto: ActivateLicenseDto,
     ipAddress?: string,
   ): Promise<ActivationResponse> {
-    const deviceTyped = device as unknown as Device;
-    const licenseTyped = license as unknown as LicenseWithDevices;
-    if (dto.fingerprint) {
-      const storedFingerprint = extractFingerprint(
-        (deviceTyped as { metadata: unknown }).metadata,
-      );
-      if (storedFingerprint && storedFingerprint !== dto.fingerprint) {
-        throw new FingerprintMismatchException();
-      }
+    const storedFingerprint = extractFingerprint(device.metadata);
+
+    if (
+      dto.fingerprint &&
+      storedFingerprint &&
+      storedFingerprint !== dto.fingerprint
+    ) {
+      throw new FingerprintMismatchException();
     }
 
     await this.prisma.$transaction(async (tx: TransactionClient) => {
       const updateData: {
         lastSeenAt: Date;
         ipAddress?: string;
-        metadata?: { fingerprint: string };
-      } = {
-        lastSeenAt: new Date(),
-      };
+        metadata?: Prisma.InputJsonValue;
+      } = { lastSeenAt: new Date() };
+
       if (ipAddress) {
         updateData.ipAddress = ipAddress;
       }
-      if (
-        dto.fingerprint &&
-        !extractFingerprint((deviceTyped as { metadata: unknown }).metadata)
-      ) {
+
+      if (dto.fingerprint && !storedFingerprint) {
         updateData.metadata = createFingerprintMetadata(dto.fingerprint);
       }
 
-      await tx.device.update({
-        where: { id: (deviceTyped as { id: string }).id },
-        data: updateData,
-      });
-
-      await this.logAction(tx, {
-        licenseId: (licenseTyped as { id: string }).id,
-        action: LICENSE_ACTIONS.DEVICE_REACTIVATED,
-        licenseKey: dto.licenseKey,
-        deviceId: dto.deviceId,
-        ipAddress,
+      await tx.device.update({ where: { id: device.id }, data: updateData });
+      await tx.licenseLog.create({
+        data: {
+          licenseId: license.id,
+          action: LICENSE_ACTIONS.DEVICE_REACTIVATED,
+          licenseKey: dto.licenseKey,
+          deviceId: dto.deviceId,
+          ipAddress,
+        },
       });
     });
 
@@ -438,8 +368,7 @@ export class LicenseService {
     await this.prisma.$transaction(async (tx: TransactionClient) => {
       await tx.device.create({
         data: {
-          licenseId: (license as unknown as LicenseWithDevices & { id: string })
-            .id,
+          licenseId: license.id,
           deviceId: dto.deviceId,
           deviceName: dto.deviceInfo?.name ?? 'Unknown',
           browserInfo: dto.deviceInfo?.browser,
@@ -450,16 +379,22 @@ export class LicenseService {
         },
       });
 
-      const licenseTyped = license as unknown as LicenseWithDevices & {
-        id: string;
-      };
-      await this.logAction(tx, {
-        licenseId: licenseTyped.id,
-        action: LICENSE_ACTIONS.DEVICE_ACTIVATED,
-        licenseKey: dto.licenseKey,
-        deviceId: dto.deviceId,
-        ipAddress,
-        metadata: dto.deviceInfo as unknown as Record<string, unknown>,
+      await tx.licenseLog.create({
+        data: {
+          licenseId: license.id,
+          action: LICENSE_ACTIONS.DEVICE_ACTIVATED,
+          licenseKey: dto.licenseKey,
+          deviceId: dto.deviceId,
+          ipAddress,
+          metadata: dto.deviceInfo
+            ? ({
+                name: dto.deviceInfo.name,
+                browser: dto.deviceInfo.browser,
+                os: dto.deviceInfo.os,
+                timezone: dto.deviceInfo.timezone,
+              } as Prisma.InputJsonValue)
+            : undefined,
+        },
       });
     });
 
@@ -470,51 +405,42 @@ export class LicenseService {
     };
   }
 
-  private async updateDeviceLastSeen(
-    deviceId: string,
+  private async updateDeviceActivity(
+    device: Device,
+    fingerprint?: string,
     ipAddress?: string,
-  ): Promise<Device> {
-    return this.prisma.device.update({
-      where: { id: deviceId },
-      data: { lastSeenAt: new Date(), ipAddress },
-    });
-  }
-
-  private async updateLicenseStatus(
-    licenseId: string,
-    status: string,
-    logData: Record<string, unknown> & { action: string },
   ): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.license.update({
-        where: { id: licenseId },
-        data: { status: status as License['status'] },
-      }),
-      this.prisma.licenseLog.create({
-        data: { licenseId, ...logData },
-      }),
-    ]);
-  }
+    const storedFingerprint = extractFingerprint(device.metadata);
 
-  private async logAction(
-    tx: PrismaService | TransactionClient,
-    data: Record<string, unknown> & { action: string },
-  ): Promise<void> {
-    await (tx as TransactionClient).licenseLog.create({ data });
+    if (fingerprint && !storedFingerprint) {
+      await this.prisma.device.update({
+        where: { id: device.id },
+        data: {
+          metadata: createFingerprintMetadata(fingerprint),
+          lastSeenAt: new Date(),
+          ipAddress,
+        },
+      });
+    } else {
+      await this.prisma.device.update({
+        where: { id: device.id },
+        data: { lastSeenAt: new Date(), ipAddress },
+      });
+    }
   }
 
   private async logFailedActivation(
     dto: ActivateLicenseDto,
     ipAddress: string | undefined,
     reason: string,
-  ) {
+  ): Promise<void> {
     await this.prisma.licenseLog.create({
       data: {
         action: LICENSE_ACTIONS.ACTIVATION_FAILED,
         licenseKey: dto.licenseKey,
         deviceId: dto.deviceId,
         ipAddress,
-        metadata: { reason },
+        metadata: { reason } as Prisma.InputJsonValue,
       },
     });
   }

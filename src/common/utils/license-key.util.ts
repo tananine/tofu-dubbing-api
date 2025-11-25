@@ -7,6 +7,7 @@ export function generateLicenseKey(
   const randomPart = randomBytes(LICENSE_CONSTANTS.KEY_RANDOM_BYTES)
     .toString('hex')
     .toUpperCase();
+
   const segments = randomPart.match(
     new RegExp(`.{1,${LICENSE_CONSTANTS.KEY_SEGMENT_LENGTH}}`, 'g'),
   );

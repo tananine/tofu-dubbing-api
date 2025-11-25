@@ -12,8 +12,7 @@ export class PrismaService
 
   constructor() {
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    const adapter = new PrismaPg(pool);
-    super({ adapter });
+    super({ adapter: new PrismaPg(pool) });
     this.pool = pool;
   }
 

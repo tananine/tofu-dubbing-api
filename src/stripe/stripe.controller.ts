@@ -17,27 +17,20 @@ export class StripeController {
     @Headers('stripe-signature') signature: string,
     @Req() req: RawBodyRequest<Request>,
   ) {
-    this.validateWebhookRequest(signature, req.rawBody);
-
-    try {
-      return await this.stripeService.handleWebhook(signature, req.rawBody!);
-    } catch (error) {
-      throw new WebhookProcessingException(
-        error instanceof Error ? error : new Error(String(error)),
-      );
-    }
-  }
-
-  private validateWebhookRequest(
-    signature: string | undefined,
-    rawBody: Buffer | undefined,
-  ) {
     if (!signature) {
       throw new MissingWebhookSignatureException();
     }
 
-    if (!rawBody) {
+    if (!req.rawBody) {
       throw new MissingRawBodyException();
+    }
+
+    try {
+      return await this.stripeService.handleWebhook(signature, req.rawBody);
+    } catch (error) {
+      throw new WebhookProcessingException(
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   }
 }

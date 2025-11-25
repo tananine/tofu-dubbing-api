@@ -4,7 +4,7 @@ import Stripe from 'stripe';
 import { LicenseService } from '../license/license.service.js';
 import {
   LICENSE_CONSTANTS,
-  STRIPE_CONFIG,
+  STRIPE_API_VERSION,
   ERROR_CODES,
 } from '../common/constants.js';
 
@@ -14,31 +14,19 @@ export class StripeService {
   private readonly logger = new Logger(StripeService.name);
 
   constructor(
-    private readonly configService: ConfigService,
+    private readonly config: ConfigService,
     private readonly licenseService: LicenseService,
   ) {
-    this.stripe = this.initializeStripe();
-  }
-
-  private initializeStripe(): Stripe {
-    const apiKey = this.getRequiredConfig('STRIPE_SECRET_KEY');
-    return new Stripe(apiKey, { apiVersion: STRIPE_CONFIG.API_VERSION });
-  }
-
-  private getRequiredConfig(key: string): string {
-    const value = this.configService.get<string>(key);
-    if (!value) {
-      throw new Error(`${key} is not configured`);
-    }
-    return value;
+    this.stripe = new Stripe(this.getConfig('STRIPE_SECRET_KEY'), {
+      apiVersion: STRIPE_API_VERSION,
+    });
   }
 
   async handleWebhook(signature: string, rawBody: Buffer) {
-    const webhookSecret = this.getRequiredConfig('STRIPE_WEBHOOK_SECRET');
     const event = this.stripe.webhooks.constructEvent(
       rawBody,
       signature,
-      webhookSecret,
+      this.getConfig('STRIPE_WEBHOOK_SECRET'),
     );
 
     await this.processEvent(event);
@@ -46,25 +34,25 @@ export class StripeService {
     return { received: true };
   }
 
-  private async processEvent(event: Stripe.Event) {
-    const handlers: Record<string, (data: unknown) => Promise<void>> = {
-      'payment_intent.succeeded': (data) =>
-        this.handlePaymentSuccess(data as Stripe.PaymentIntent),
-      'charge.refunded': (data) => this.handleRefund(data as Stripe.Charge),
-      'payment_intent.payment_failed': (data) =>
-        this.logPaymentFailure(data as Stripe.PaymentIntent),
-    };
-
-    const handler = handlers[event.type];
-
-    if (handler) {
-      await handler(event.data.object);
-    } else {
-      this.logger.log(`Unhandled event type: ${event.type}`);
+  private async processEvent(event: Stripe.Event): Promise<void> {
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        await this.handlePaymentSuccess(event.data.object);
+        break;
+      case 'charge.refunded':
+        await this.handleRefund(event.data.object);
+        break;
+      case 'payment_intent.payment_failed':
+        this.logger.warn(`Payment failed: ${event.data.object.id}`);
+        break;
+      default:
+        this.logger.log(`Unhandled event type: ${event.type}`);
     }
   }
 
-  private async handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
+  private async handlePaymentSuccess(
+    paymentIntent: Stripe.PaymentIntent,
+  ): Promise<void> {
     const email = paymentIntent.metadata?.email;
 
     if (!email) {
@@ -74,17 +62,15 @@ export class StripeService {
       return;
     }
 
-    const maxDevices = this.parseMaxDevices(paymentIntent.metadata?.maxDevices);
-
     await this.licenseService.createLicense({
       email,
       stripePaymentId: paymentIntent.id,
       stripeCustomerId: paymentIntent.customer as string,
-      maxDevices,
+      maxDevices: this.parseMaxDevices(paymentIntent.metadata?.maxDevices),
     });
   }
 
-  private async handleRefund(charge: Stripe.Charge) {
+  private async handleRefund(charge: Stripe.Charge): Promise<void> {
     if (!charge.payment_intent) {
       this.logger.warn(
         `${ERROR_CODES.REFUND_WITHOUT_PAYMENT_INTENT}: ${charge.id}`,
@@ -95,8 +81,12 @@ export class StripeService {
     await this.licenseService.refundLicense(charge.payment_intent as string);
   }
 
-  private async logPaymentFailure(paymentIntent: Stripe.PaymentIntent) {
-    this.logger.warn(`Payment failed: ${paymentIntent.id}`);
+  private getConfig(key: string): string {
+    const value = this.config.get<string>(key);
+    if (!value) {
+      throw new Error(`${key} is not configured`);
+    }
+    return value;
   }
 
   private parseMaxDevices(value?: string): number {
