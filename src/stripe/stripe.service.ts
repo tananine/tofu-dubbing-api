@@ -36,49 +36,49 @@ export class StripeService {
 
   private async processEvent(event: Stripe.Event): Promise<void> {
     switch (event.type) {
-      case 'payment_intent.succeeded':
-        await this.handlePaymentSuccess(event.data.object);
+      case 'checkout.session.completed':
+        await this.handleCheckoutComplete(event.data.object);
         break;
-      case 'charge.refunded':
-        await this.handleRefund(event.data.object);
-        break;
-      case 'payment_intent.payment_failed':
-        this.logger.warn(`Payment failed: ${event.data.object.id}`);
+      case 'charge.dispute.created':
+        await this.handleDispute(event.data.object);
         break;
       default:
         this.logger.log(`Unhandled event type: ${event.type}`);
     }
   }
 
-  private async handlePaymentSuccess(
-    paymentIntent: Stripe.PaymentIntent,
+  private async handleCheckoutComplete(
+    session: Stripe.Checkout.Session,
   ): Promise<void> {
-    const email = paymentIntent.metadata?.email;
+    const email =
+      session.customer_email || session.customer_details?.email || null;
 
     if (!email) {
       this.logger.error(
-        `${ERROR_CODES.MISSING_EMAIL_IN_PAYMENT}: ${paymentIntent.id}`,
+        `${ERROR_CODES.MISSING_EMAIL_IN_PAYMENT}: ${session.id}`,
       );
       return;
     }
+
+    const maxDevices = this.parseMaxDevices(session.metadata?.maxDevices);
 
     await this.licenseService.createLicense({
       email,
-      stripePaymentId: paymentIntent.id,
-      stripeCustomerId: paymentIntent.customer as string,
-      maxDevices: this.parseMaxDevices(paymentIntent.metadata?.maxDevices),
+      stripePaymentId: session.payment_intent as string,
+      stripeCustomerId: session.customer as string,
+      maxDevices,
     });
   }
 
-  private async handleRefund(charge: Stripe.Charge): Promise<void> {
-    if (!charge.payment_intent) {
-      this.logger.warn(
-        `${ERROR_CODES.REFUND_WITHOUT_PAYMENT_INTENT}: ${charge.id}`,
-      );
+  private async handleDispute(dispute: Stripe.Dispute): Promise<void> {
+    const paymentIntentId = dispute.payment_intent as string;
+
+    if (!paymentIntentId) {
+      this.logger.warn(`Dispute without payment_intent: ${dispute.id}`);
       return;
     }
 
-    await this.licenseService.refundLicense(charge.payment_intent as string);
+    await this.licenseService.suspendLicenseByPayment(paymentIntentId);
   }
 
   private getConfig(key: string): string {

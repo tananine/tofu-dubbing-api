@@ -251,34 +251,33 @@ export class LicenseService {
     };
   }
 
-  async refundLicense(stripePaymentId: string) {
+  async suspendLicenseByPayment(stripePaymentId: string) {
     const license = await this.prisma.license.findUnique({
       where: { stripePaymentId },
     });
 
     if (!license) {
-      throw new LicenseNotFoundException();
+      return;
     }
 
     await this.prisma.$transaction(
       async (tx) => {
         await tx.license.update({
           where: { id: license.id },
-          data: { status: LICENSE_STATUS.REFUNDED },
+          data: { status: LICENSE_STATUS.SUSPENDED },
         });
         await tx.licenseLog.create({
           data: {
             licenseId: license.id,
-            action: LICENSE_ACTIONS.LICENSE_REFUNDED,
+            action: LICENSE_ACTIONS.LICENSE_SUSPENDED,
             licenseKey: license.licenseKey,
             stripePaymentId,
+            metadata: { reason: 'Dispute/Chargeback' } as Prisma.InputJsonValue,
           },
         });
       },
       { timeout: 10000 },
     );
-
-    return { success: true };
   }
 
   private async findLicenseWithDevices(

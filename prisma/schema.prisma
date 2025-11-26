@@ -67,5 +67,4 @@ enum LicenseStatus {
   ACTIVE
   SUSPENDED
   EXPIRED
-  REFUNDED
 }
