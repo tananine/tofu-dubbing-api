@@ -1,4 +1,5 @@
-import type { Device, Prisma } from '../../../generated/prisma/client.js';
+import type { Device } from '../../db/schema.js';
+import type { JsonValue } from '../types/index.js';
 
 export function findDeviceById(
   devices: Device[],
@@ -24,8 +25,6 @@ export function extractFingerprint(metadata: unknown): string | undefined {
   return (metadata as { fingerprint?: string }).fingerprint;
 }
 
-export function createFingerprintMetadata(
-  fingerprint: string,
-): Prisma.InputJsonValue {
-  return { fingerprint } as Prisma.InputJsonValue;
+export function createFingerprintMetadata(fingerprint: string): JsonValue {
+  return { fingerprint };
 }

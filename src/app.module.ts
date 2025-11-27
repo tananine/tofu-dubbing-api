@@ -4,15 +4,15 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller.js';
 import { LicenseModule } from './license/license.module.js';
 import { StripeModule } from './stripe/stripe.module.js';
-import { PrismaModule } from './prisma/prisma.module.js';
+import { DatabaseModule } from './db/database.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    DatabaseModule,
     LicenseModule,
     StripeModule,
-    PrismaModule,
   ],
   controllers: [AppController],
 })

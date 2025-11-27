@@ -1,6 +1,10 @@
-import type { Prisma } from '../../../generated/prisma/client.js';
-
-export type JsonValue = Prisma.InputJsonValue;
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: JsonValue }
+  | JsonValue[];
 
 export interface LicenseResponse {
   status: string;
