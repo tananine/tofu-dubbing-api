@@ -27,6 +27,8 @@ export interface VerificationResponse {
   gracePeriodHours?: number;
   devicesUsed?: number;
   maxDevices?: number;
+  verificationToken?: string;
+  timestamp?: number;
 }
 
 export interface DeactivationResponse {

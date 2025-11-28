@@ -34,6 +34,7 @@ import {
   extractFingerprint,
   createFingerprintMetadata,
 } from '../common/utils/device.util.js';
+import { generateVerificationToken } from '../common/utils/verification-token.util.js';
 import type {
   LicenseResponse,
   ActivationResponse,
@@ -173,6 +174,13 @@ export class LicenseService {
 
     await this.updateDeviceActivity(device, dto.fingerprint, ipAddress);
 
+    const timestamp = Date.now();
+    const verificationToken = generateVerificationToken(
+      dto.licenseKey,
+      dto.deviceId,
+      timestamp,
+    );
+
     return {
       valid: true,
       status: license.status,
@@ -180,6 +188,8 @@ export class LicenseService {
       gracePeriodHours: LICENSE_CONSTANTS.GRACE_PERIOD_HOURS,
       devicesUsed: license.devices.length,
       maxDevices: license.maxDevices,
+      verificationToken,
+      timestamp,
     };
   }
 
