@@ -12,11 +12,11 @@ export class UsersService {
     private db: PostgresJsDatabase<typeof schema>,
   ) {}
 
-  async findByUsername(username: string): Promise<User | undefined> {
+  async findByEmail(email: string): Promise<User | undefined> {
     const result = await this.db
       .select()
       .from(users)
-      .where(eq(users.username, username))
+      .where(eq(users.email, email))
       .limit(1);
     return result[0];
   }
