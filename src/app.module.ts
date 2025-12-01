@@ -5,6 +5,7 @@ import { DatabaseModule } from './database/database.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
+import { TranslateModule } from './translate/translate.module.js';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
     AuthModule,
     UsersModule,
     SubscriptionsModule,
+    TranslateModule,
   ],
   controllers: [AppController],
 })
