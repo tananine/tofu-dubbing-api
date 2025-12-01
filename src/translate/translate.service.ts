@@ -19,7 +19,7 @@ export class TranslateService {
       messages: [
         {
           role: 'system',
-          content: `You are a translator. Translate the following text from ${dto.lang} to ${dto.targetLang}. Only respond with the translated text, nothing else.`,
+          content: `You are a translator. Translate the following text from ${dto.sourceLanguage} to ${dto.targetLanguage}. Only respond with the translated text, nothing else.`,
         },
         {
           role: 'user',
@@ -30,9 +30,7 @@ export class TranslateService {
 
     return {
       text: response.choices[0].message.content || '',
-      lang: dto.targetLang,
+      lang: dto.targetLanguage,
     };
   }
 }
-
-

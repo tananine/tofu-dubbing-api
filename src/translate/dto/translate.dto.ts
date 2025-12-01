@@ -7,15 +7,13 @@ export class TranslateDto {
 
   @IsString()
   @IsNotEmpty()
-  lang!: string;
+  sourceLanguage!: string;
 
   @IsString()
   @IsNotEmpty()
-  targetLang!: string;
+  targetLanguage!: string;
 
   @IsString()
   @IsNotEmpty()
   model!: string;
 }
-
-
