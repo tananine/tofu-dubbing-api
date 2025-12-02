@@ -19,11 +19,15 @@ export class TranslateService {
       messages: [
         {
           role: 'system',
-          content: `You are a translator. Translate the following text from ${dto.sourceLanguage} to ${dto.targetLanguage}. Only respond with the translated text, nothing else.`,
+          content: `Respond only with the rewritten text — do not include explanations or comments.`,
         },
         {
           role: 'user',
-          content: dto.text,
+          content: `
+            You are an expert translator and text stylist. Rewrite the source text "${dto.text}" according to the user's request. 
+              - If a target language (${dto.targetLanguage}) is provided, translate and rewrite it to sound natural, clear, and smooth while preserving the original meaning and tone.
+              - If no target language is provided, simply refine the original text to make it easier to understand without changing the meaning.
+          `,
         },
       ],
     });
