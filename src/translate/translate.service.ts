@@ -24,9 +24,7 @@ export class TranslateService {
         {
           role: 'user',
           content: `
-            You are an expert translator and text stylist. Rewrite the source text "${dto.text}" according to the user's request. 
-              - If a target language (${dto.targetLanguage}) is provided, translate and rewrite it to sound natural, clear, and smooth while preserving the original meaning and tone.
-              - If no target language is provided, simply refine the original text to make it easier to understand without changing the meaning.
+            "${dto.text}" translated into "${dto.targetLanguage}"
           `,
         },
       ],
