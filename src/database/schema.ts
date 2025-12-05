@@ -22,8 +22,12 @@ export const subscriptions = pgTable('subscriptions', {
   userId: integer('user_id')
     .notNull()
     .references(() => users.id),
+  stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
+  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
+  status: varchar('status', { length: 50 }).notNull().default('active'),
   currentPeriodStart: timestamp('current_period_start').notNull(),
   currentPeriodEnd: timestamp('current_period_end').notNull(),
+  cancelAtPeriodEnd: integer('cancel_at_period_end').default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

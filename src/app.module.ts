@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module.js';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
 import { TranslateModule } from './translate/translate.module.js';
 import { DubbingModule } from './dubbing/dubbing.module.js';
+import { WebhooksModule } from './webhooks/webhooks.module.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { DubbingModule } from './dubbing/dubbing.module.js';
     SubscriptionsModule,
     TranslateModule,
     DubbingModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
 })
