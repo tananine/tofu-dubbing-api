@@ -100,7 +100,7 @@ export class StripeWebhookController {
         stripeSubscription.current_period_start * 1000,
       ),
       currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
-      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end ? 1 : 0,
+      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
     });
   }
 
@@ -123,7 +123,7 @@ export class StripeWebhookController {
         currentPeriodEnd: new Date(
           stripeSubscription.current_period_end * 1000,
         ),
-        cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end ? 1 : 0,
+        cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
       },
     );
   }

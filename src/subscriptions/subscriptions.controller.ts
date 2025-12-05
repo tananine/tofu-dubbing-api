@@ -104,7 +104,7 @@ export class SubscriptionsController {
       subscription: {
         status: subscription.status,
         currentPeriodEnd: subscription.currentPeriodEnd,
-        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd === 1,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
       },
     };
   }
@@ -120,7 +120,7 @@ export class SubscriptionsController {
       throw new BadRequestException('No active subscription found');
     }
 
-    if (subscription.cancelAtPeriodEnd === 1) {
+    if (subscription.cancelAtPeriodEnd) {
       throw new BadRequestException('Subscription is already set to cancel');
     }
 

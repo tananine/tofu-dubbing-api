@@ -64,7 +64,7 @@ export class SubscriptionsService {
           eq(subscriptions.userId, userId),
           gte(subscriptions.currentPeriodEnd, new Date()),
           inArray(subscriptions.status, ['active', 'trialing']),
-          eq(subscriptions.cancelAtPeriodEnd, 1),
+          eq(subscriptions.cancelAtPeriodEnd, true),
         ),
       )
       .orderBy(desc(subscriptions.currentPeriodEnd))
@@ -79,7 +79,7 @@ export class SubscriptionsService {
     status: string;
     currentPeriodStart: Date;
     currentPeriodEnd: Date;
-    cancelAtPeriodEnd?: number;
+    cancelAtPeriodEnd?: boolean;
   }) {
     const existing = await this.findByUserId(data.userId);
 
@@ -92,7 +92,7 @@ export class SubscriptionsService {
           status: data.status,
           currentPeriodStart: data.currentPeriodStart,
           currentPeriodEnd: data.currentPeriodEnd,
-          cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? 0,
+          cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? false,
           updatedAt: new Date(),
         })
         .where(eq(subscriptions.id, existing.id));
@@ -106,7 +106,7 @@ export class SubscriptionsService {
       status: data.status,
       currentPeriodStart: data.currentPeriodStart,
       currentPeriodEnd: data.currentPeriodEnd,
-      cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? 0,
+      cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? false,
     };
 
     const result = await this.db
@@ -123,7 +123,7 @@ export class SubscriptionsService {
       status: string;
       currentPeriodStart: Date;
       currentPeriodEnd: Date;
-      cancelAtPeriodEnd: number;
+      cancelAtPeriodEnd: boolean;
     }>,
   ) {
     await this.db
@@ -139,7 +139,7 @@ export class SubscriptionsService {
     await this.db
       .update(subscriptions)
       .set({
-        cancelAtPeriodEnd: cancel ? 1 : 0,
+        cancelAtPeriodEnd: cancel,
         updatedAt: new Date(),
       })
       .where(eq(subscriptions.id, subscriptionId));
