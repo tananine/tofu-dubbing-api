@@ -9,6 +9,7 @@ const MAX_FREE_DURATION_MS = 15 * 60 * 1000;
 export interface PolicyTokenPayload {
   allowDubbing: boolean;
   reason?: string | null;
+  status?: number | null;
   limitations: {
     maxDuration: number;
     allowBackgroundDubbing: boolean;
@@ -48,16 +49,30 @@ export class DubbingService {
   ): Promise<string> {
     const isPro = await this.subscriptionsService.isPro(userId);
 
-    const allowDubbing = isPro || dto.videoDuration <= MAX_FREE_DURATION_MS;
+    let allowDubbing = isPro || dto.videoDuration <= MAX_FREE_DURATION_MS;
+    let reason: string | null = null;
+    let status: number | null = null;
+
+    if (!allowDubbing) {
+      reason =
+        'Videos longer than 15 minutes are not available on the free plan. Please upgrade to Pro.';
+      status = 1100;
+    }
+
+    if (!isPro && dto.aiEnabled) {
+      allowDubbing = false;
+      reason =
+        'AI features are only available for Pro users. Please upgrade to Pro.';
+      status = 1101;
+    }
+
     const allowBackgroundDubbing = isPro;
-    const reason = allowDubbing
-      ? null
-      : 'Videos longer than 15 minutes are not available on the free plan. Please upgrade to Pro.';
 
     const now = Math.floor(Date.now() / 1000);
     const payload: PolicyTokenPayload = {
       allowDubbing,
       reason,
+      status,
       limitations: {
         maxDuration: MAX_FREE_DURATION_MS,
         allowBackgroundDubbing,
