@@ -37,6 +37,7 @@ export class SubscriptionsController {
     }
 
     const priceId = this.configService.get<string>('STRIPE_PRICE_ID');
+    const successUrl = this.configService.get<string>('STRIPE_SUCCESS_URL');
 
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -49,6 +50,7 @@ export class SubscriptionsController {
       ],
       client_reference_id: String(userId),
       customer_email: userEmail,
+      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
     });
 
     return { url: session.url };
