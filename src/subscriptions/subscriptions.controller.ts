@@ -37,12 +37,6 @@ export class SubscriptionsController {
     }
 
     const priceId = this.configService.get<string>('STRIPE_PRICE_ID');
-    const successUrl =
-      this.configService.get<string>('STRIPE_SUCCESS_URL') ||
-      'http://localhost:3000/success';
-    const cancelUrl =
-      this.configService.get<string>('STRIPE_CANCEL_URL') ||
-      'http://localhost:3000/pricing';
 
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -55,8 +49,6 @@ export class SubscriptionsController {
       ],
       client_reference_id: String(userId),
       customer_email: userEmail,
-      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl,
     });
 
     return { url: session.url };
@@ -73,13 +65,8 @@ export class SubscriptionsController {
       throw new BadRequestException('No active subscription found');
     }
 
-    const returnUrl =
-      this.configService.get<string>('STRIPE_PORTAL_RETURN_URL') ||
-      'http://localhost:3000/settings';
-
     const session = await this.stripe.billingPortal.sessions.create({
       customer: subscription.stripeCustomerId,
-      return_url: returnUrl,
     });
 
     return { url: session.url };
