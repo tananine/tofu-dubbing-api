@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { StartDubbingDto } from './dto/start-dubbing.dto.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
+import { ErrorCodes } from '../common/error-codes.js';
 
 const MAX_FREE_DURATION_MS = 15 * 60 * 1000;
 
@@ -54,15 +55,13 @@ export class DubbingService {
     let status: number | null = null;
 
     if (!allowDubbing) {
-      reason =
-        'Videos longer than 15 minutes are not available on the free plan. Please upgrade to Pro.';
+      reason = ErrorCodes.VIDEO_TOO_LONG_FOR_FREE;
       status = 1100;
     }
 
     if (!isPro && dto.aiEnabled) {
       allowDubbing = false;
-      reason =
-        'AI features are only available for Pro users. Please upgrade to Pro.';
+      reason = ErrorCodes.AI_NOT_FOR_FREE;
       status = 1101;
     }
 

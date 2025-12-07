@@ -9,6 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { SubscriptionsService } from './subscriptions.service.js';
+import { ErrorCodes } from '../common/error-codes.js';
 import Stripe from 'stripe';
 
 @Controller('subscriptions')
@@ -33,7 +34,7 @@ export class SubscriptionsController {
     const existingSubscription =
       await this.subscriptionsService.findActiveByUserId(userId);
     if (existingSubscription) {
-      throw new BadRequestException('You already have an active subscription');
+      throw new BadRequestException(ErrorCodes.ALREADY_HAVE_SUBSCRIPTION);
     }
 
     const priceId = this.configService.get<string>('STRIPE_PRICE_ID');
@@ -64,7 +65,7 @@ export class SubscriptionsController {
       await this.subscriptionsService.findActiveByUserId(userId);
 
     if (!subscription || !subscription.stripeCustomerId) {
-      throw new BadRequestException('No active subscription found');
+      throw new BadRequestException(ErrorCodes.NO_ACTIVE_SUBSCRIPTION);
     }
 
     const session = await this.stripe.billingPortal.sessions.create({
@@ -106,11 +107,11 @@ export class SubscriptionsController {
       await this.subscriptionsService.findActiveByUserId(userId);
 
     if (!subscription || !subscription.stripeSubscriptionId) {
-      throw new BadRequestException('No active subscription found');
+      throw new BadRequestException(ErrorCodes.NO_ACTIVE_SUBSCRIPTION);
     }
 
     if (subscription.cancelAtPeriodEnd) {
-      throw new BadRequestException('Subscription is already set to cancel');
+      throw new BadRequestException(ErrorCodes.SUBSCRIPTION_ALREADY_CANCELLED);
     }
 
     await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
@@ -122,7 +123,7 @@ export class SubscriptionsController {
       true,
     );
 
-    return { message: 'Subscription will be canceled at period end' };
+    return { message: ErrorCodes.SUBSCRIPTION_CANCELLED };
   }
 
   @Post('reactivate')
@@ -133,9 +134,7 @@ export class SubscriptionsController {
       await this.subscriptionsService.findCancelableByUserId(userId);
 
     if (!subscription || !subscription.stripeSubscriptionId) {
-      throw new BadRequestException(
-        'No subscription pending cancellation found',
-      );
+      throw new BadRequestException(ErrorCodes.NO_CANCELLABLE_SUBSCRIPTION);
     }
 
     await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
@@ -147,6 +146,6 @@ export class SubscriptionsController {
       false,
     );
 
-    return { message: 'Subscription reactivated successfully' };
+    return { message: ErrorCodes.SUBSCRIPTION_REACTIVATED };
   }
 }

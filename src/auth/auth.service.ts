@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { RegisterDto } from './dto/register.dto.js';
+import { ErrorCodes } from '../common/error-codes.js';
 
 @Injectable()
 export class AuthService {
@@ -42,7 +43,7 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     const existingUser = await this.usersService.findByEmail(registerDto.email);
     if (existingUser) {
-      throw new ConflictException('Email already exists');
+      throw new ConflictException(ErrorCodes.EMAIL_ALREADY_EXISTS);
     }
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
