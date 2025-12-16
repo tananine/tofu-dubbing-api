@@ -17,6 +17,7 @@ import Stripe from 'stripe';
 @Controller('subscriptions')
 export class SubscriptionsController {
   private stripe: Stripe;
+  private portalConfigId: string | null = null;
 
   constructor(
     private subscriptionsService: SubscriptionsService,
@@ -80,14 +81,31 @@ export class SubscriptionsController {
       throw new BadRequestException(ErrorCodes.NO_ACTIVE_SUBSCRIPTION);
     }
 
+    if (!this.portalConfigId) {
+      const configuration =
+        await this.stripe.billingPortal.configurations.create({
+          features: {
+            customer_update: {
+              allowed_updates: [
+                'name',
+                'address',
+                'phone',
+                'shipping',
+                'tax_id',
+              ],
+              enabled: true,
+            },
+          },
+          business_profile: {
+            headline: null,
+          },
+        });
+      this.portalConfigId = configuration.id;
+    }
+
     const session = await this.stripe.billingPortal.sessions.create({
       customer: subscription.stripeCustomerId,
-      features: {
-        customer_update: {
-          allowed_updates: ['name', 'address', 'phone', 'shipping', 'tax_id'],
-          enabled: true,
-        },
-      },
+      configuration: this.portalConfigId,
     });
 
     return { url: session.url };
