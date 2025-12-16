@@ -11,10 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { SubscriptionsService } from './subscriptions.service.js';
 import { ErrorCodes } from '../common/error-codes.js';
-import {
-  CreateCheckoutDto,
-  PlanInterval,
-} from './dto/create-checkout.dto.js';
+import { CreateCheckoutDto, PlanInterval } from './dto/create-checkout.dto.js';
 import Stripe from 'stripe';
 
 @Controller('subscriptions')
@@ -85,6 +82,12 @@ export class SubscriptionsController {
 
     const session = await this.stripe.billingPortal.sessions.create({
       customer: subscription.stripeCustomerId,
+      features: {
+        customer_update: {
+          allowed_updates: ['name', 'address', 'phone', 'shipping', 'tax_id'],
+          enabled: true,
+        },
+      },
     });
 
     return { url: session.url };
