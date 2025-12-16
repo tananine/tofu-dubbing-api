@@ -76,6 +76,8 @@ export class SubscriptionsService {
     userId: number;
     stripeCustomerId: string;
     stripeSubscriptionId: string;
+    stripePriceId?: string;
+    planInterval?: string;
     status: string;
     currentPeriodStart: Date;
     currentPeriodEnd: Date;
@@ -89,6 +91,8 @@ export class SubscriptionsService {
         .set({
           stripeCustomerId: data.stripeCustomerId,
           stripeSubscriptionId: data.stripeSubscriptionId,
+          stripePriceId: data.stripePriceId,
+          planInterval: data.planInterval,
           status: data.status,
           currentPeriodStart: data.currentPeriodStart,
           currentPeriodEnd: data.currentPeriodEnd,
@@ -103,6 +107,8 @@ export class SubscriptionsService {
       userId: data.userId,
       stripeCustomerId: data.stripeCustomerId,
       stripeSubscriptionId: data.stripeSubscriptionId,
+      stripePriceId: data.stripePriceId,
+      planInterval: data.planInterval,
       status: data.status,
       currentPeriodStart: data.currentPeriodStart,
       currentPeriodEnd: data.currentPeriodEnd,
@@ -121,6 +127,8 @@ export class SubscriptionsService {
     stripeSubscriptionId: string,
     data: Partial<{
       status: string;
+      stripePriceId: string;
+      planInterval: string;
       currentPeriodStart: Date;
       currentPeriodEnd: Date;
       cancelAtPeriodEnd: boolean;

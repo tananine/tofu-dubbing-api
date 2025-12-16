@@ -5,11 +5,16 @@ import {
   Request,
   UseGuards,
   BadRequestException,
+  Body,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { SubscriptionsService } from './subscriptions.service.js';
 import { ErrorCodes } from '../common/error-codes.js';
+import {
+  CreateCheckoutDto,
+  PlanInterval,
+} from './dto/create-checkout.dto.js';
 import Stripe from 'stripe';
 
 @Controller('subscriptions')
@@ -27,7 +32,10 @@ export class SubscriptionsController {
 
   @Post('create-checkout-session')
   @UseGuards(JwtAuthGuard)
-  async createCheckoutSession(@Request() req: any) {
+  async createCheckoutSession(
+    @Request() req: any,
+    @Body() createCheckoutDto: CreateCheckoutDto,
+  ) {
     const userId = req.user.id;
     const userEmail = req.user.email;
 
@@ -37,7 +45,11 @@ export class SubscriptionsController {
       throw new BadRequestException(ErrorCodes.ALREADY_HAVE_SUBSCRIPTION);
     }
 
-    const priceId = this.configService.get<string>('STRIPE_PRICE_ID');
+    const priceId =
+      createCheckoutDto.planInterval === PlanInterval.MONTHLY
+        ? this.configService.get<string>('STRIPE_MONTHLY_PRICE_ID')
+        : this.configService.get<string>('STRIPE_YEARLY_PRICE_ID');
+
     const successUrl = this.configService.get<string>('STRIPE_SUCCESS_URL');
 
     const session = await this.stripe.checkout.sessions.create({
@@ -52,6 +64,9 @@ export class SubscriptionsController {
       client_reference_id: String(userId),
       customer_email: userEmail,
       success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      metadata: {
+        planInterval: createCheckoutDto.planInterval,
+      },
     });
 
     return { url: session.url };
@@ -95,6 +110,7 @@ export class SubscriptionsController {
         status: subscription.status,
         currentPeriodEnd: subscription.currentPeriodEnd,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        planInterval: subscription.planInterval,
       },
     };
   }

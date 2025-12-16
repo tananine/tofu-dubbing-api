@@ -91,10 +91,16 @@ export class StripeWebhookController {
       subscriptionId,
     )) as any;
 
+    const priceId = stripeSubscription.items?.data?.[0]?.price?.id;
+    const planInterval =
+      stripeSubscription.items?.data?.[0]?.price?.recurring?.interval;
+
     await this.subscriptionsService.createOrUpdate({
       userId: parseInt(userId, 10),
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscriptionId,
+      stripePriceId: priceId,
+      planInterval: planInterval,
       status: stripeSubscription.status,
       currentPeriodStart: new Date(
         stripeSubscription.current_period_start * 1000,
@@ -111,12 +117,26 @@ export class StripeWebhookController {
       current_period_start: number;
       current_period_end: number;
       cancel_at_period_end: boolean;
+      items?: {
+        data?: Array<{
+          price?: {
+            id?: string;
+            recurring?: { interval?: string };
+          };
+        }>;
+      };
     };
+
+    const priceId = stripeSubscription.items?.data?.[0]?.price?.id;
+    const planInterval =
+      stripeSubscription.items?.data?.[0]?.price?.recurring?.interval;
 
     await this.subscriptionsService.updateByStripeSubscriptionId(
       stripeSubscription.id,
       {
         status: stripeSubscription.status,
+        stripePriceId: priceId,
+        planInterval: planInterval,
         currentPeriodStart: new Date(
           stripeSubscription.current_period_start * 1000,
         ),
@@ -148,10 +168,16 @@ export class StripeWebhookController {
       subscriptionId,
     )) as any;
 
+    const priceId = stripeSubscription.items?.data?.[0]?.price?.id;
+    const planInterval =
+      stripeSubscription.items?.data?.[0]?.price?.recurring?.interval;
+
     await this.subscriptionsService.updateByStripeSubscriptionId(
       subscriptionId,
       {
         status: stripeSubscription.status,
+        stripePriceId: priceId,
+        planInterval: planInterval,
         currentPeriodStart: new Date(
           stripeSubscription.current_period_start * 1000,
         ),
