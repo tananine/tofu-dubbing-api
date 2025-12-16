@@ -7,6 +7,5 @@ export enum PlanInterval {
 
 export class CreateCheckoutDto {
   @IsEnum(PlanInterval)
-  planInterval: PlanInterval;
+  planInterval!: PlanInterval;
 }
-
