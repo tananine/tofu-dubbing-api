@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 import Stripe from 'stripe';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
+import { MessageCodes } from '../common/message-codes.js';
 
 @Controller('webhooks')
 export class StripeWebhookController {
@@ -34,7 +35,7 @@ export class StripeWebhookController {
     );
 
     if (!webhookSecret) {
-      throw new BadRequestException('Webhook secret not configured');
+      throw new BadRequestException(MessageCodes.WEBHOOK_SECRET_NOT_CONFIGURED);
     }
 
     let event: Stripe.Event;
@@ -46,7 +47,7 @@ export class StripeWebhookController {
         webhookSecret,
       );
     } catch {
-      throw new BadRequestException('Invalid signature');
+      throw new BadRequestException(MessageCodes.INVALID_SIGNATURE);
     }
 
     switch (event.type) {

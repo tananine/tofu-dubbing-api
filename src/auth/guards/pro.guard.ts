@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { SubscriptionsService } from '../../subscriptions/subscriptions.service.js';
+import { MessageCodes } from '../../common/message-codes.js';
 
 @Injectable()
 export class ProGuard implements CanActivate {
@@ -20,7 +21,7 @@ export class ProGuard implements CanActivate {
 
     const isPro = await this.subscriptionsService.isPro(user.id);
     if (!isPro) {
-      throw new ForbiddenException('Pro subscription required');
+      throw new ForbiddenException(MessageCodes.PRO_SUBSCRIPTION_REQUIRED);
     }
 
     return true;

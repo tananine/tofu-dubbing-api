@@ -10,7 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { SubscriptionsService } from './subscriptions.service.js';
-import { ErrorCodes } from '../common/error-codes.js';
+import { MessageCodes } from '../common/message-codes.js';
 import { CreateCheckoutDto, PlanInterval } from './dto/create-checkout.dto.js';
 import Stripe from 'stripe';
 
@@ -40,7 +40,7 @@ export class SubscriptionsController {
     const existingSubscription =
       await this.subscriptionsService.findActiveByUserId(userId);
     if (existingSubscription) {
-      throw new BadRequestException(ErrorCodes.ALREADY_HAVE_SUBSCRIPTION);
+      throw new BadRequestException(MessageCodes.ALREADY_HAVE_SUBSCRIPTION);
     }
 
     const priceId =
@@ -78,7 +78,7 @@ export class SubscriptionsController {
       await this.subscriptionsService.findActiveByUserId(userId);
 
     if (!subscription || !subscription.stripeCustomerId) {
-      throw new BadRequestException(ErrorCodes.NO_ACTIVE_SUBSCRIPTION);
+      throw new BadRequestException(MessageCodes.NO_ACTIVE_SUBSCRIPTION);
     }
 
     if (!this.portalConfigId) {
@@ -144,11 +144,13 @@ export class SubscriptionsController {
       await this.subscriptionsService.findActiveByUserId(userId);
 
     if (!subscription || !subscription.stripeSubscriptionId) {
-      throw new BadRequestException(ErrorCodes.NO_ACTIVE_SUBSCRIPTION);
+      throw new BadRequestException(MessageCodes.NO_ACTIVE_SUBSCRIPTION);
     }
 
     if (subscription.cancelAtPeriodEnd) {
-      throw new BadRequestException(ErrorCodes.SUBSCRIPTION_ALREADY_CANCELLED);
+      throw new BadRequestException(
+        MessageCodes.SUBSCRIPTION_ALREADY_CANCELLED,
+      );
     }
 
     await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
@@ -160,7 +162,7 @@ export class SubscriptionsController {
       true,
     );
 
-    return { message: ErrorCodes.SUBSCRIPTION_CANCELLED };
+    return { message: MessageCodes.SUBSCRIPTION_CANCELLED };
   }
 
   @Post('reactivate')
@@ -171,7 +173,7 @@ export class SubscriptionsController {
       await this.subscriptionsService.findCancelableByUserId(userId);
 
     if (!subscription || !subscription.stripeSubscriptionId) {
-      throw new BadRequestException(ErrorCodes.NO_CANCELLABLE_SUBSCRIPTION);
+      throw new BadRequestException(MessageCodes.NO_CANCELLABLE_SUBSCRIPTION);
     }
 
     await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
@@ -183,6 +185,6 @@ export class SubscriptionsController {
       false,
     );
 
-    return { message: ErrorCodes.SUBSCRIPTION_REACTIVATED };
+    return { message: MessageCodes.SUBSCRIPTION_REACTIVATED };
   }
 }

@@ -1,7 +1,7 @@
 import { IsArray, IsNumber, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class SubtitleItemDto {
+class SubtitleItemDto {
   @IsString()
   text!: string;
 
@@ -12,13 +12,13 @@ export class SubtitleItemDto {
   end!: number;
 
   @IsString()
-  googleTranslation!: string;
+  sourceTranslation!: string;
 
   @IsNumber()
   start!: number;
 }
 
-export class ConfigDto {
+class ConfigDto {
   @IsString()
   model!: string;
 
@@ -32,7 +32,7 @@ export class ConfigDto {
   toLanguage!: string;
 }
 
-export class VideoDetailsDto {
+class VideoDetailsDto {
   @IsString()
   videoId!: string;
 

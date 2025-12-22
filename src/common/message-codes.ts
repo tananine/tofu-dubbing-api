@@ -1,4 +1,4 @@
-export const ErrorCodes = {
+export const MessageCodes = {
   EMAIL_ALREADY_EXISTS: 'emailAlreadyExists',
   INVALID_CREDENTIALS: 'invalidCredentials',
   ALREADY_HAVE_SUBSCRIPTION: 'alreadyHaveSubscription',
@@ -7,6 +7,12 @@ export const ErrorCodes = {
   NO_CANCELLABLE_SUBSCRIPTION: 'noCancellableSubscription',
   SUBSCRIPTION_CANCELLED: 'subscriptionCancelled',
   SUBSCRIPTION_REACTIVATED: 'subscriptionReactivated',
+  PRO_SUBSCRIPTION_REQUIRED: 'proSubscriptionRequired',
+  WEBHOOK_SECRET_NOT_CONFIGURED: 'webhookSecretNotConfigured',
+  INVALID_SIGNATURE: 'invalidSignature',
+  UNKNOWN_ERROR: 'unknownError',
+  DUBBING_GENERATION_COMPLETED: 'dubbingGenerationCompleted',
 } as const;
 
-export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
+export type MessageCode = (typeof MessageCodes)[keyof typeof MessageCodes];
+

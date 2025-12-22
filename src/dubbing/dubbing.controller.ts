@@ -5,7 +5,7 @@ import { GenerateDubbingDto } from './dto/generate-dubbing.dto.js';
 
 @Controller('dubbing')
 export class DubbingController {
-  constructor(private dubbingService: DubbingService) {}
+  constructor(private readonly dubbingService: DubbingService) {}
 
   @Post('generate')
   @UseGuards(JwtAuthGuard)
