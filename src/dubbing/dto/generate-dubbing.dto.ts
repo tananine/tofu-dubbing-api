@@ -1,0 +1,60 @@
+import { IsArray, IsNumber, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class SubtitleItemDto {
+  @IsString()
+  text!: string;
+
+  @IsNumber()
+  index!: number;
+
+  @IsNumber()
+  end!: number;
+
+  @IsString()
+  googleTranslation!: string;
+
+  @IsNumber()
+  start!: number;
+}
+
+export class ConfigDto {
+  @IsString()
+  model!: string;
+
+  @IsString()
+  voice!: string;
+
+  @IsString()
+  voiceType!: string;
+
+  @IsString()
+  toLanguage!: string;
+}
+
+export class VideoDetailsDto {
+  @IsString()
+  videoId!: string;
+
+  @IsString()
+  title!: string;
+
+  @IsNumber()
+  subtitleLevel!: number;
+}
+
+export class GenerateDubbingDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SubtitleItemDto)
+  subtitles!: SubtitleItemDto[];
+
+  @ValidateNested()
+  @Type(() => ConfigDto)
+  config!: ConfigDto;
+
+  @ValidateNested()
+  @Type(() => VideoDetailsDto)
+  videoDetails!: VideoDetailsDto;
+}
+

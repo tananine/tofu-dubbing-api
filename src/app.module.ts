@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
 import { WebhooksModule } from './webhooks/webhooks.module.js';
+import { DubbingModule } from './dubbing/dubbing.module.js';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { WebhooksModule } from './webhooks/webhooks.module.js';
     UsersModule,
     SubscriptionsModule,
     WebhooksModule,
+    DubbingModule,
   ],
   controllers: [AppController],
 })
