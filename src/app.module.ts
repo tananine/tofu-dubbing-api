@@ -5,8 +5,6 @@ import { DatabaseModule } from './database/database.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
-import { TranslateModule } from './translate/translate.module.js';
-import { DubbingModule } from './dubbing/dubbing.module.js';
 import { WebhooksModule } from './webhooks/webhooks.module.js';
 
 @Module({
@@ -16,8 +14,6 @@ import { WebhooksModule } from './webhooks/webhooks.module.js';
     AuthModule,
     UsersModule,
     SubscriptionsModule,
-    TranslateModule,
-    DubbingModule,
     WebhooksModule,
   ],
   controllers: [AppController],
