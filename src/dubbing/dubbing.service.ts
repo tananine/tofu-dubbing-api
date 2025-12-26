@@ -128,7 +128,7 @@ export class DubbingService {
     return {
       index: subtitle.index,
       buffer: null,
-      text: subtitle.sourceTranslation,
+      text: subtitle.targetText,
       start: subtitle.start,
       end: subtitle.end,
       key,
@@ -142,7 +142,7 @@ export class DubbingService {
     config: any,
     key: string,
   ): Promise<AudioFile> {
-    const escapedText = subtitle.sourceTranslation.replace(/"/g, '\\"');
+    const escapedText = subtitle.targetText.replace(/"/g, '\\"');
     const command = `python3 ${this.SCRIPT_PATH} "${escapedText}" "${config.voice}"`;
 
     const { stdout } = await execAsync(command, {
@@ -153,7 +153,7 @@ export class DubbingService {
     return {
       index: subtitle.index,
       buffer: stdout as Buffer,
-      text: subtitle.sourceTranslation,
+      text: subtitle.targetText,
       start: subtitle.start,
       end: subtitle.end,
       key,

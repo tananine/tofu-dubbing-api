@@ -3,16 +3,16 @@ import { Type } from 'class-transformer';
 
 class SubtitleItemDto {
   @IsString()
-  text!: string;
+  sourceText!: string;
+
+  @IsString()
+  targetText!: string;
 
   @IsNumber()
   index!: number;
 
   @IsNumber()
   end!: number;
-
-  @IsString()
-  sourceTranslation!: string;
 
   @IsNumber()
   start!: number;
@@ -57,4 +57,3 @@ export class GenerateDubbingDto {
   @Type(() => VideoDetailsDto)
   videoDetails!: VideoDetailsDto;
 }
-
