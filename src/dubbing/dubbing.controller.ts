@@ -1,5 +1,5 @@
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+// import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { DubbingService } from './dubbing.service.js';
 import { GenerateDubbingDto } from './dto/generate-dubbing.dto.js';
 
@@ -8,9 +8,8 @@ export class DubbingController {
   constructor(private readonly dubbingService: DubbingService) {}
 
   @Post('generate')
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   async generateDubbing(@Body() generateDubbingDto: GenerateDubbingDto) {
     return this.dubbingService.generateDubbing(generateDubbingDto);
   }
 }
-

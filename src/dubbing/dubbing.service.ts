@@ -31,6 +31,18 @@ export class DubbingService {
 
   constructor(private readonly storageService: StorageService) {}
 
+  private roundToTwoDecimals(value: number): number {
+    return Number(value.toFixed(2));
+  }
+
+  private normalizeSubtitleTimestamps(subtitle: any) {
+    return {
+      ...subtitle,
+      start: this.roundToTwoDecimals(subtitle.start),
+      end: this.roundToTwoDecimals(subtitle.end),
+    };
+  }
+
   async generateDubbing(generateDubbingDto: GenerateDubbingDto) {
     const { subtitles, config, videoDetails } = generateDubbingDto;
 
@@ -93,14 +105,15 @@ export class DubbingService {
     config: any,
     videoDetails: any,
   ): Promise<AudioFile> {
-    const key = this.buildStorageKey(subtitle, config, videoDetails);
+    const normalizedSubtitle = this.normalizeSubtitleTimestamps(subtitle);
+    const key = this.buildStorageKey(normalizedSubtitle, config, videoDetails);
     const fileExists = await this.storageService.fileExists(key);
 
     if (fileExists) {
-      return this.createCachedAudioFile(subtitle, key);
+      return this.createCachedAudioFile(normalizedSubtitle, key);
     }
 
-    return this.generateNewAudioFile(subtitle, config, key);
+    return this.generateNewAudioFile(normalizedSubtitle, config, key);
   }
 
   private buildStorageKey(
