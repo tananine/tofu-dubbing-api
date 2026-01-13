@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Tofu Dubbing API Spec",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

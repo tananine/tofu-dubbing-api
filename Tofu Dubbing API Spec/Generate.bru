@@ -1,0 +1,212 @@
+meta {
+  name: Generate
+  type: http
+  seq: 1
+}
+
+post {
+  url: https://tofu-dubbing-api.dolishco.com/api/dubbing/generate
+  body: json
+  auth: inherit
+}
+
+headers {
+  accept: */*
+  accept-language: en-US,en;q=0.9,th;q=0.8
+  content-type: application/json
+  origin: https://www.youtube.com
+  priority: u=1, i
+  referer: https://www.youtube.com/
+  sec-ch-ua: "Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"
+  sec-ch-ua-arch: "arm"
+  sec-ch-ua-bitness: "64"
+  sec-ch-ua-form-factors: "Desktop"
+  sec-ch-ua-full-version: "143.0.7499.170"
+  sec-ch-ua-full-version-list: "Google Chrome";v="143.0.7499.170", "Chromium";v="143.0.7499.170", "Not A(Brand";v="24.0.0.0"
+  sec-ch-ua-mobile: ?0
+  sec-ch-ua-model: ""
+  sec-ch-ua-platform: "macOS"
+  sec-ch-ua-platform-version: "26.1.0"
+  sec-ch-ua-wow64: ?0
+  sec-fetch-dest: empty
+  sec-fetch-mode: cors
+  sec-fetch-site: cross-site
+  user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+}
+
+body:json {
+  {
+    "subtitles": [
+      {
+        "sourceText": "my job to cold call people but also around 30 times throughout the day strangers would walk into the office knock on the door and ask to be given a tour around the gym to see if the membership was worth signing up for so it was my job to turn on the Charisma",
+        "targetText": "งานของผมคือการโทรหาลูกค้า แต่ในแต่ละ วัน จะมีคนแปลกหน้าเดินเข้ามาในออฟฟิศประมาณ 30 ครั้ง เคาะประตู และขอ ชมฟิตเนสเพื่อดูว่าการเป็น สมาชิกน่าสนใจหรือไม่  มันคุ้มค่าที่จะสมัครสมาชิก ดังนั้นหน้าที่ ของฉันคือการใช้เสน่ห์ดึงดูดใจ",
+        "index": 12,
+        "start": 189.959,
+        "end": 202.92000000000002
+      },
+      {
+        "sourceText": "sell myself sell the facilities in the hopes that they sign up for the membership but when I first started the job I felt very shy giv T I had no idea what to show them or let alone what to speak to them about on that long walk",
+        "targetText": "ขายตัวเอง ขายสิ่งอำนวยความสะดวกต่างๆ โดย หวังว่าพวกเขาจะสมัคร สมาชิก แต่ตอนที่ฉันเริ่ม งานใหม่ๆ ฉันรู้สึกเขินอายมาก เพราะฉันไม่รู้ว่าจะ แสดงอะไรให้พวกเขาดู หรือแม้แต่จะ พูดอะไรกับพวกเขาในระหว่างการเดินยาวๆ ไปตามทางเดินที่ยาวและเปลี่ยวไปยัง",
+        "index": 13,
+        "start": 205.28,
+        "end": 220.239
+      },
+      {
+        "sourceText": "the gym but one day one of my sales managers told me something I will never forget he said leis no matter who walks through that door whether it's a 17-year-old kid wearing skateboard clothes or a 57-year-old woman dressed as if she's about to go on a dinner dat you can always find one thing about that",
+        "targetText": "ยิม แต่แล้ววันหนึ่งผู้จัดการฝ่ายขายคนหนึ่ง บอกฉันบางอย่างที่ฉันจะไม่มีวัน ลืม เขาบอกว่า ไม่ว่าใครจะเดินเข้ามาใน ประตูนั้น ไม่ว่าจะเป็น เด็กอายุ 17 ปีที่ใส่ชุดสเก็ตบอร์ด หรือผู้หญิงอายุ 57 ปีที่แต่งตัวราวกับกำลังจะไป เดท คุณสามารถหาหนึ่งสิ่งในตัว",
+        "index": 14,
+        "start": 222.4,
+        "end": 242.87900000000002
+      }
+    ],
+    "config": {
+      "model": "edge-tts",
+      "voice": "th-TH-NiwatNeural",
+      "voiceType": "neural",
+      "toLanguage": "th-TH"
+    },
+    "videoDetails": {
+      "videoId": "nWwvRuPQois",
+      "title": "how to never feel shy again",
+      "subtitleLevel": 1
+    }
+  }
+}
+
+settings {
+  encodeUrl: false
+  timeout: 0
+}
+
+example {
+  name: example
+  
+  request: {
+    url: https://tofu-dubbing-api.dolishco.com/api/dubbing/generate
+    method: POST
+    mode: json
+    headers: {
+      accept: */*
+      accept-language: en-US,en;q=0.9,th;q=0.8
+      content-type: application/json
+      origin: https://www.youtube.com
+      priority: u=1, i
+      referer: https://www.youtube.com/
+      sec-ch-ua: "Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"
+      sec-ch-ua-arch: "arm"
+      sec-ch-ua-bitness: "64"
+      sec-ch-ua-form-factors: "Desktop"
+      sec-ch-ua-full-version: "143.0.7499.170"
+      sec-ch-ua-full-version-list: "Google Chrome";v="143.0.7499.170", "Chromium";v="143.0.7499.170", "Not A(Brand";v="24.0.0.0"
+      sec-ch-ua-mobile: ?0
+      sec-ch-ua-model: ""
+      sec-ch-ua-platform: "macOS"
+      sec-ch-ua-platform-version: "26.1.0"
+      sec-ch-ua-wow64: ?0
+      sec-fetch-dest: empty
+      sec-fetch-mode: cors
+      sec-fetch-site: cross-site
+      user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+    }
+  
+    body:json: {
+      {
+        "subtitles": [
+          {
+            "sourceText": "my job to cold call people but also around 30 times throughout the day strangers would walk into the office knock on the door and ask to be given a tour around the gym to see if the membership was worth signing up for so it was my job to turn on the Charisma",
+            "targetText": "งานของผมคือการโทรหาลูกค้า แต่ในแต่ละ วัน จะมีคนแปลกหน้าเดินเข้ามาในออฟฟิศประมาณ 30 ครั้ง เคาะประตู และขอ ชมฟิตเนสเพื่อดูว่าการเป็น สมาชิกน่าสนใจหรือไม่  มันคุ้มค่าที่จะสมัครสมาชิก ดังนั้นหน้าที่ ของฉันคือการใช้เสน่ห์ดึงดูดใจ",
+            "index": 12,
+            "start": 189.959,
+            "end": 202.92000000000002
+          },
+          {
+            "sourceText": "sell myself sell the facilities in the hopes that they sign up for the membership but when I first started the job I felt very shy giv T I had no idea what to show them or let alone what to speak to them about on that long walk",
+            "targetText": "ขายตัวเอง ขายสิ่งอำนวยความสะดวกต่างๆ โดย หวังว่าพวกเขาจะสมัคร สมาชิก แต่ตอนที่ฉันเริ่ม งานใหม่ๆ ฉันรู้สึกเขินอายมาก เพราะฉันไม่รู้ว่าจะ แสดงอะไรให้พวกเขาดู หรือแม้แต่จะ พูดอะไรกับพวกเขาในระหว่างการเดินยาวๆ ไปตามทางเดินที่ยาวและเปลี่ยวไปยัง",
+            "index": 13,
+            "start": 205.28,
+            "end": 220.239
+          },
+          {
+            "sourceText": "the gym but one day one of my sales managers told me something I will never forget he said leis no matter who walks through that door whether it's a 17-year-old kid wearing skateboard clothes or a 57-year-old woman dressed as if she's about to go on a dinner dat you can always find one thing about that",
+            "targetText": "ยิม แต่แล้ววันหนึ่งผู้จัดการฝ่ายขายคนหนึ่ง บอกฉันบางอย่างที่ฉันจะไม่มีวัน ลืม เขาบอกว่า ไม่ว่าใครจะเดินเข้ามาใน ประตูนั้น ไม่ว่าจะเป็น เด็กอายุ 17 ปีที่ใส่ชุดสเก็ตบอร์ด หรือผู้หญิงอายุ 57 ปีที่แต่งตัวราวกับกำลังจะไป เดท คุณสามารถหาหนึ่งสิ่งในตัว",
+            "index": 14,
+            "start": 222.4,
+            "end": 242.87900000000002
+          }
+        ],
+        "config": {
+          "model": "edge-tts",
+          "voice": "th-TH-NiwatNeural",
+          "voiceType": "neural",
+          "toLanguage": "th-TH"
+        },
+        "videoDetails": {
+          "videoId": "nWwvRuPQois",
+          "title": "how to never feel shy again",
+          "subtitleLevel": 1
+        }
+      }
+    }
+  }
+  
+  response: {
+    headers: {
+      access-control-allow-credentials: true
+      access-control-allow-origin: *
+      access-control-expose-headers: *
+      alt-svc: h3=":443"; ma=2592000
+      content-length: 2785
+      content-type: application/json; charset=utf-8
+      date: Tue, 13 Jan 2026 05:48:23 GMT
+      etag: W/"ae1-+fPKlliokmvqrtDsBpLxEeCWaks"
+      via: 1.1 Caddy
+      x-powered-by: Express
+    }
+  
+    status: {
+      code: 201
+      text: Created
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "message": "dubbingGenerationCompleted",
+          "videoId": "nWwvRuPQois",
+          "totalFiles": 3,
+          "successCount": 3,
+          "cachedCount": 0,
+          "generatedCount": 3,
+          "errorCount": 0,
+          "audioFiles": [
+            {
+              "index": 12,
+              "url": "https://tofu-dubbing-space.sgp1.digitaloceanspaces.com/youtube/nWwvRuPQois/th-TH/th-TH-NiwatNeural/tts-12-189.96-202.92.mp3",
+              "text": "งานของผมคือการโทรหาลูกค้า แต่ในแต่ละ วัน จะมีคนแปลกหน้าเดินเข้ามาในออฟฟิศประมาณ 30 ครั้ง เคาะประตู และขอ ชมฟิตเนสเพื่อดูว่าการเป็น สมาชิกน่าสนใจหรือไม่  มันคุ้มค่าที่จะสมัครสมาชิก ดังนั้นหน้าที่ ของฉันคือการใช้เสน่ห์ดึงดูดใจ",
+              "start": 189.96,
+              "end": 202.92,
+              "cached": false
+            },
+            {
+              "index": 13,
+              "url": "https://tofu-dubbing-space.sgp1.digitaloceanspaces.com/youtube/nWwvRuPQois/th-TH/th-TH-NiwatNeural/tts-13-205.28-220.24.mp3",
+              "text": "ขายตัวเอง ขายสิ่งอำนวยความสะดวกต่างๆ โดย หวังว่าพวกเขาจะสมัคร สมาชิก แต่ตอนที่ฉันเริ่ม งานใหม่ๆ ฉันรู้สึกเขินอายมาก เพราะฉันไม่รู้ว่าจะ แสดงอะไรให้พวกเขาดู หรือแม้แต่จะ พูดอะไรกับพวกเขาในระหว่างการเดินยาวๆ ไปตามทางเดินที่ยาวและเปลี่ยวไปยัง",
+              "start": 205.28,
+              "end": 220.24,
+              "cached": false
+            },
+            {
+              "index": 14,
+              "url": "https://tofu-dubbing-space.sgp1.digitaloceanspaces.com/youtube/nWwvRuPQois/th-TH/th-TH-NiwatNeural/tts-14-222.4-242.88.mp3",
+              "text": "ยิม แต่แล้ววันหนึ่งผู้จัดการฝ่ายขายคนหนึ่ง บอกฉันบางอย่างที่ฉันจะไม่มีวัน ลืม เขาบอกว่า ไม่ว่าใครจะเดินเข้ามาใน ประตูนั้น ไม่ว่าจะเป็น เด็กอายุ 17 ปีที่ใส่ชุดสเก็ตบอร์ด หรือผู้หญิงอายุ 57 ปีที่แต่งตัวราวกับกำลังจะไป เดท คุณสามารถหาหนึ่งสิ่งในตัว",
+              "start": 222.4,
+              "end": 242.88,
+              "cached": false
+            }
+          ]
+        }
+      '''
+    }
+  }
+}
