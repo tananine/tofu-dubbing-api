@@ -8,6 +8,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
 import { WebhooksModule } from './webhooks/webhooks.module.js';
 import { DubbingModule } from './dubbing/dubbing.module.js';
 import { StorageModule } from './storage/storage.module.js';
+import { VoicesModule } from './voices/voices.module.js';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { StorageModule } from './storage/storage.module.js';
     WebhooksModule,
     StorageModule,
     DubbingModule,
+    VoicesModule,
   ],
   controllers: [AppController],
 })
