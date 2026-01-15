@@ -1,5 +1,5 @@
 meta {
-  name: Generate
+  name: generate voice
   type: http
   seq: 1
 }
@@ -7,31 +7,7 @@ meta {
 post {
   url: https://tofu-dubbing-api.dolishco.com/api/dubbing/generate
   body: json
-  auth: inherit
-}
-
-headers {
-  accept: */*
-  accept-language: en-US,en;q=0.9,th;q=0.8
-  content-type: application/json
-  origin: https://www.youtube.com
-  priority: u=1, i
-  referer: https://www.youtube.com/
-  sec-ch-ua: "Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"
-  sec-ch-ua-arch: "arm"
-  sec-ch-ua-bitness: "64"
-  sec-ch-ua-form-factors: "Desktop"
-  sec-ch-ua-full-version: "143.0.7499.170"
-  sec-ch-ua-full-version-list: "Google Chrome";v="143.0.7499.170", "Chromium";v="143.0.7499.170", "Not A(Brand";v="24.0.0.0"
-  sec-ch-ua-mobile: ?0
-  sec-ch-ua-model: ""
-  sec-ch-ua-platform: "macOS"
-  sec-ch-ua-platform-version: "26.1.0"
-  sec-ch-ua-wow64: ?0
-  sec-fetch-dest: empty
-  sec-fetch-mode: cors
-  sec-fetch-site: cross-site
-  user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+  auth: none
 }
 
 body:json {
@@ -85,30 +61,6 @@ example {
     url: https://tofu-dubbing-api.dolishco.com/api/dubbing/generate
     method: POST
     mode: json
-    headers: {
-      accept: */*
-      accept-language: en-US,en;q=0.9,th;q=0.8
-      content-type: application/json
-      origin: https://www.youtube.com
-      priority: u=1, i
-      referer: https://www.youtube.com/
-      sec-ch-ua: "Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"
-      sec-ch-ua-arch: "arm"
-      sec-ch-ua-bitness: "64"
-      sec-ch-ua-form-factors: "Desktop"
-      sec-ch-ua-full-version: "143.0.7499.170"
-      sec-ch-ua-full-version-list: "Google Chrome";v="143.0.7499.170", "Chromium";v="143.0.7499.170", "Not A(Brand";v="24.0.0.0"
-      sec-ch-ua-mobile: ?0
-      sec-ch-ua-model: ""
-      sec-ch-ua-platform: "macOS"
-      sec-ch-ua-platform-version: "26.1.0"
-      sec-ch-ua-wow64: ?0
-      sec-fetch-dest: empty
-      sec-fetch-mode: cors
-      sec-fetch-site: cross-site
-      user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
-    }
-  
     body:json: {
       {
         "subtitles": [
@@ -155,10 +107,10 @@ example {
       access-control-allow-origin: *
       access-control-expose-headers: *
       alt-svc: h3=":443"; ma=2592000
-      content-length: 2785
+      content-length: 2782
       content-type: application/json; charset=utf-8
-      date: Tue, 13 Jan 2026 05:48:23 GMT
-      etag: W/"ae1-+fPKlliokmvqrtDsBpLxEeCWaks"
+      date: Thu, 15 Jan 2026 03:57:16 GMT
+      etag: W/"ade-55wNlknvOF0A5ROmcUiVbcEEMkI"
       via: 1.1 Caddy
       x-powered-by: Express
     }
@@ -176,8 +128,8 @@ example {
           "videoId": "nWwvRuPQois",
           "totalFiles": 3,
           "successCount": 3,
-          "cachedCount": 0,
-          "generatedCount": 3,
+          "cachedCount": 3,
+          "generatedCount": 0,
           "errorCount": 0,
           "audioFiles": [
             {
@@ -186,7 +138,7 @@ example {
               "text": "งานของผมคือการโทรหาลูกค้า แต่ในแต่ละ วัน จะมีคนแปลกหน้าเดินเข้ามาในออฟฟิศประมาณ 30 ครั้ง เคาะประตู และขอ ชมฟิตเนสเพื่อดูว่าการเป็น สมาชิกน่าสนใจหรือไม่  มันคุ้มค่าที่จะสมัครสมาชิก ดังนั้นหน้าที่ ของฉันคือการใช้เสน่ห์ดึงดูดใจ",
               "start": 189.96,
               "end": 202.92,
-              "cached": false
+              "cached": true
             },
             {
               "index": 13,
@@ -194,7 +146,7 @@ example {
               "text": "ขายตัวเอง ขายสิ่งอำนวยความสะดวกต่างๆ โดย หวังว่าพวกเขาจะสมัคร สมาชิก แต่ตอนที่ฉันเริ่ม งานใหม่ๆ ฉันรู้สึกเขินอายมาก เพราะฉันไม่รู้ว่าจะ แสดงอะไรให้พวกเขาดู หรือแม้แต่จะ พูดอะไรกับพวกเขาในระหว่างการเดินยาวๆ ไปตามทางเดินที่ยาวและเปลี่ยวไปยัง",
               "start": 205.28,
               "end": 220.24,
-              "cached": false
+              "cached": true
             },
             {
               "index": 14,
@@ -202,7 +154,7 @@ example {
               "text": "ยิม แต่แล้ววันหนึ่งผู้จัดการฝ่ายขายคนหนึ่ง บอกฉันบางอย่างที่ฉันจะไม่มีวัน ลืม เขาบอกว่า ไม่ว่าใครจะเดินเข้ามาใน ประตูนั้น ไม่ว่าจะเป็น เด็กอายุ 17 ปีที่ใส่ชุดสเก็ตบอร์ด หรือผู้หญิงอายุ 57 ปีที่แต่งตัวราวกับกำลังจะไป เดท คุณสามารถหาหนึ่งสิ่งในตัว",
               "start": 222.4,
               "end": 242.88,
-              "cached": false
+              "cached": true
             }
           ]
         }
