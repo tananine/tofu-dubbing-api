@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { GenerateDubbingDto } from './dto/generate-dubbing.dto.js';
 import { StorageService } from '../storage/storage.service.js';
 import { MessageCodes } from '../common/message-codes.js';
+import { TranslationService } from '../translation/translation.service.js';
+import { getAIProvider, isAIModel } from '../common/ai-models.constants.js';
 
 const execAsync = promisify(exec);
 
@@ -29,7 +32,10 @@ export class DubbingService {
   private readonly MAX_BUFFER_SIZE = 10 * 1024 * 1024;
   private readonly SCRIPT_PATH = 'scripts/edge-tts-generate.py';
 
-  constructor(private readonly storageService: StorageService) {}
+  constructor(
+    private readonly storageService: StorageService,
+    private readonly translationService: TranslationService,
+  ) {}
 
   private roundToTwoDecimals(value: number): number {
     return Number(value.toFixed(2));
@@ -106,6 +112,25 @@ export class DubbingService {
     videoDetails: any,
   ): Promise<AudioFile> {
     const normalizedSubtitle = this.normalizeSubtitleTimestamps(subtitle);
+
+    if (config.model && isAIModel(config.model)) {
+      const provider = getAIProvider(config.model);
+      if (provider) {
+        try {
+          const translatedText = await this.translationService.translateText(
+            {
+              text: normalizedSubtitle.sourceText,
+              fromLanguage: 'auto',
+              toLanguage: config.toLanguage,
+              model: config.model,
+            },
+            provider,
+          );
+          normalizedSubtitle.targetText = translatedText;
+        } catch (error) {}
+      }
+    }
+
     const key = this.buildStorageKey(normalizedSubtitle, config, videoDetails);
     const fileExists = await this.storageService.fileExists(key);
 
@@ -121,7 +146,12 @@ export class DubbingService {
     config: any,
     videoDetails: any,
   ): string {
-    return `youtube/${videoDetails.videoId}/${config.toLanguage}/${config.voice}/tts-${subtitle.index}-${subtitle.start}-${subtitle.end}.mp3`;
+    const textHash = createHash('sha256')
+      .update(subtitle.targetText || '')
+      .digest('hex')
+      .slice(0, 16);
+
+    return `youtube/${videoDetails.videoId}/${config.toLanguage}/${config.voice}/tts-${subtitle.index}-${subtitle.start}-${subtitle.end}-${textHash}.mp3`;
   }
 
   private createCachedAudioFile(subtitle: any, key: string): AudioFile {

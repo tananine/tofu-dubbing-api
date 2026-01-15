@@ -1,4 +1,4 @@
-import { IsArray, IsNumber, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class SubtitleItemDto {
@@ -19,8 +19,9 @@ class SubtitleItemDto {
 }
 
 class ConfigDto {
+  @IsOptional()
   @IsString()
-  model!: string;
+  model?: string;
 
   @IsString()
   voice!: string;
