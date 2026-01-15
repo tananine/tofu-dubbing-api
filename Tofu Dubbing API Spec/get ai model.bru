@@ -1,0 +1,74 @@
+meta {
+  name: get ai model
+  type: http
+  seq: 3
+}
+
+get {
+  url: https://tofu-dubbing-api.dolishco.com/api/ai-models
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+example {
+  name: example
+  
+  request: {
+    url: https://tofu-dubbing-api.dolishco.com/api/ai-models
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    headers: {
+      access-control-allow-credentials: true
+      access-control-allow-origin: *
+      access-control-expose-headers: *
+      alt-svc: h3=":443"; ma=2592000
+      content-length: 272
+      content-type: application/json; charset=utf-8
+      date: Thu, 15 Jan 2026 07:41:32 GMT
+      etag: W/"110-EjCSMwSTLkBljcBQpqyZcdouAbs"
+      via: 1.1 Caddy
+      x-powered-by: Express
+    }
+  
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "models": {
+            "openai": [
+              "gpt-4o",
+              "gpt-4o-mini",
+              "gpt-4-turbo",
+              "gpt-4",
+              "gpt-3.5-turbo"
+            ],
+            "claude": [
+              "claude-3-5-sonnet-20241022",
+              "claude-3-opus-20240229",
+              "claude-3-sonnet-20240229",
+              "claude-3-haiku-20240307"
+            ],
+            "gemini": [
+              "gemini-2.0-flash-exp",
+              "gemini-1.5-pro",
+              "gemini-1.5-flash"
+            ]
+          }
+        }
+      '''
+    }
+  }
+}

@@ -7,7 +7,7 @@ meta {
 post {
   url: https://tofu-dubbing-api.dolishco.com/api/dubbing/generate
   body: json
-  auth: none
+  auth: inherit
 }
 
 body:json {
@@ -36,9 +36,9 @@ body:json {
       }
     ],
     "config": {
-      "model": "edge-tts",
+      "model": null,
       "voice": "th-TH-NiwatNeural",
-      "voiceType": "neural",
+      "voiceType": "edge-tts",
       "toLanguage": "th-TH"
     },
     "videoDetails": {
@@ -87,9 +87,9 @@ example {
           }
         ],
         "config": {
-          "model": "edge-tts",
+          "model": null,
           "voice": "th-TH-NiwatNeural",
-          "voiceType": "neural",
+          "voiceType": "edge-tts",
           "toLanguage": "th-TH"
         },
         "videoDetails": {
@@ -107,10 +107,10 @@ example {
       access-control-allow-origin: *
       access-control-expose-headers: *
       alt-svc: h3=":443"; ma=2592000
-      content-length: 2782
+      content-length: 2836
       content-type: application/json; charset=utf-8
-      date: Thu, 15 Jan 2026 03:57:16 GMT
-      etag: W/"ade-55wNlknvOF0A5ROmcUiVbcEEMkI"
+      date: Thu, 15 Jan 2026 07:32:17 GMT
+      etag: W/"b14-RXqnOlo/PFSe0RqX62s38G1w7yo"
       via: 1.1 Caddy
       x-powered-by: Express
     }
@@ -128,33 +128,33 @@ example {
           "videoId": "nWwvRuPQois",
           "totalFiles": 3,
           "successCount": 3,
-          "cachedCount": 3,
-          "generatedCount": 0,
+          "cachedCount": 0,
+          "generatedCount": 3,
           "errorCount": 0,
           "audioFiles": [
             {
               "index": 12,
-              "url": "https://tofu-dubbing-space.sgp1.digitaloceanspaces.com/youtube/nWwvRuPQois/th-TH/th-TH-NiwatNeural/tts-12-189.96-202.92.mp3",
+              "url": "https://tofu-dubbing-space.sgp1.digitaloceanspaces.com/youtube/nWwvRuPQois/th-TH/th-TH-NiwatNeural/tts-12-189.96-202.92-587ac9e4d1dd370b.mp3",
               "text": "งานของผมคือการโทรหาลูกค้า แต่ในแต่ละ วัน จะมีคนแปลกหน้าเดินเข้ามาในออฟฟิศประมาณ 30 ครั้ง เคาะประตู และขอ ชมฟิตเนสเพื่อดูว่าการเป็น สมาชิกน่าสนใจหรือไม่  มันคุ้มค่าที่จะสมัครสมาชิก ดังนั้นหน้าที่ ของฉันคือการใช้เสน่ห์ดึงดูดใจ",
               "start": 189.96,
               "end": 202.92,
-              "cached": true
+              "cached": false
             },
             {
               "index": 13,
-              "url": "https://tofu-dubbing-space.sgp1.digitaloceanspaces.com/youtube/nWwvRuPQois/th-TH/th-TH-NiwatNeural/tts-13-205.28-220.24.mp3",
+              "url": "https://tofu-dubbing-space.sgp1.digitaloceanspaces.com/youtube/nWwvRuPQois/th-TH/th-TH-NiwatNeural/tts-13-205.28-220.24-e59290ed1d3a3b96.mp3",
               "text": "ขายตัวเอง ขายสิ่งอำนวยความสะดวกต่างๆ โดย หวังว่าพวกเขาจะสมัคร สมาชิก แต่ตอนที่ฉันเริ่ม งานใหม่ๆ ฉันรู้สึกเขินอายมาก เพราะฉันไม่รู้ว่าจะ แสดงอะไรให้พวกเขาดู หรือแม้แต่จะ พูดอะไรกับพวกเขาในระหว่างการเดินยาวๆ ไปตามทางเดินที่ยาวและเปลี่ยวไปยัง",
               "start": 205.28,
               "end": 220.24,
-              "cached": true
+              "cached": false
             },
             {
               "index": 14,
-              "url": "https://tofu-dubbing-space.sgp1.digitaloceanspaces.com/youtube/nWwvRuPQois/th-TH/th-TH-NiwatNeural/tts-14-222.4-242.88.mp3",
+              "url": "https://tofu-dubbing-space.sgp1.digitaloceanspaces.com/youtube/nWwvRuPQois/th-TH/th-TH-NiwatNeural/tts-14-222.4-242.88-e0bffbd8e21a3327.mp3",
               "text": "ยิม แต่แล้ววันหนึ่งผู้จัดการฝ่ายขายคนหนึ่ง บอกฉันบางอย่างที่ฉันจะไม่มีวัน ลืม เขาบอกว่า ไม่ว่าใครจะเดินเข้ามาใน ประตูนั้น ไม่ว่าจะเป็น เด็กอายุ 17 ปีที่ใส่ชุดสเก็ตบอร์ด หรือผู้หญิงอายุ 57 ปีที่แต่งตัวราวกับกำลังจะไป เดท คุณสามารถหาหนึ่งสิ่งในตัว",
               "start": 222.4,
               "end": 242.88,
-              "cached": true
+              "cached": false
             }
           ]
         }
