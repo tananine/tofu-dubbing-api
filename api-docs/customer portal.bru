@@ -14,3 +14,52 @@ settings {
   encodeUrl: true
   timeout: 0
 }
+
+docs {
+  # Customer Portal
+  
+  Create Stripe Customer Portal session URL.
+  
+  ## Endpoint
+  POST /api/subscriptions/customer-portal
+  
+  ## Authentication
+  **Required** - Must include Bearer token in Authorization header
+  
+  ## Description
+  Creates a URL to access Stripe Customer Portal where users can:
+  - View billing history
+  - Update credit card information
+  - Download invoices
+  - Update customer details (name, address, phone, shipping, tax ID)
+  
+  ## Preconditions
+  - User must have an active subscription (status: 'active' or 'trialing')
+  - currentPeriodEnd must be >= current date
+  - Must have stripeCustomerId
+  
+  ## Response (200 OK)
+  ```json
+  {
+    "url": "https://billing.stripe.com/p/session/..."
+  }
+  ```
+  
+  - `url`: Stripe Customer Portal URL
+  
+  ## Error Responses
+  - **400 Bad Request**:
+    - `{ "message": "noActiveSubscription" }` - No active subscription or missing customer ID
+  - **401 Unauthorized**: Missing or invalid token
+  
+  ## Business Logic
+  - Portal configuration is created once and cached
+  - Allows updating: name, address, phone, shipping, tax_id
+  - Session is temporary and expires
+  
+  ## Use Cases
+  - Manage payment information
+  - View billing history
+  - Update customer details
+  - Download invoices
+}

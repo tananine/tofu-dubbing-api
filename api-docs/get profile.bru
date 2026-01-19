@@ -15,6 +15,46 @@ settings {
   timeout: 0
 }
 
+docs {
+  # Get Profile
+  
+  Get the authenticated user's profile information.
+  
+  ## Endpoint
+  GET /api/auth/profile
+  
+  ## Authentication
+  **Required** - Must include Bearer token in Authorization header
+  
+  ## Description
+  Returns the current user's profile data extracted from JWT token.
+  
+  ## Response (200 OK)
+  ```json
+  {
+    "id": 2,
+    "email": "user@example.com",
+    "createdAt": "2025-12-22T08:22:58.420Z",
+    "updatedAt": "2025-12-22T08:22:58.420Z",
+    "isPro": false
+  }
+  ```
+  
+  - `id`: User ID
+  - `email`: User's email address
+  - `createdAt`: Account creation timestamp
+  - `updatedAt`: Last update timestamp
+  - `isPro`: Pro subscription status (true if user has active subscription)
+  
+  ## Error Responses
+  - **401 Unauthorized**: Missing or invalid token
+  
+  ## Use Cases
+  - Display user information in UI
+  - Check Pro membership status
+  - Verify user identity
+}
+
 example {
   name: example
   

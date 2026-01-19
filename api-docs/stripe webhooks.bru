@@ -14,3 +14,53 @@ settings {
   encodeUrl: true
   timeout: 0
 }
+
+docs {
+  # Stripe Webhooks
+  
+  Receive webhook events from Stripe.
+  
+  ## Endpoint
+  POST /api/webhooks/stripe
+  
+  ## Authentication
+  Stripe signature verification (not Bearer token)
+  
+  ## Description
+  Webhook endpoint for receiving real-time events from Stripe about subscription 
+  status changes and payment events.
+  
+  ## Events Handled
+  - `checkout.session.completed` - Payment successful, subscription created
+  - `customer.subscription.updated` - Subscription details changed
+  - `customer.subscription.deleted` - Subscription cancelled/expired
+  - `invoice.payment_succeeded` - Recurring payment successful
+  - `invoice.payment_failed` - Recurring payment failed
+  
+  ## Security
+  - Uses Stripe webhook signature verification
+  - Verifies request authenticity with webhook secret
+  - Rejects requests without valid signature
+  
+  ## Error Responses
+  - **400 Bad Request**:
+    - `{ "message": "webhookSecretNotConfigured" }` - Webhook secret not set in env
+    - `{ "message": "invalidSignature" }` - Invalid Stripe signature
+  
+  ## Business Logic
+  - Automatically updates subscription status in database
+  - Updates isPro status based on subscription state
+  - Handles subscription lifecycle events
+  - Manages payment success/failure
+  
+  ## Use Cases
+  - Auto-update Pro membership status
+  - Track subscription changes
+  - Handle payment failures
+  - Manage subscription cancellations
+  
+  ## Notes
+  - This endpoint is called by Stripe only, not by clients
+  - Requires webhook secret configured in Stripe dashboard
+  - Must be publicly accessible (no Bearer auth)
+}

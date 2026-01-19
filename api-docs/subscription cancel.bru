@@ -14,3 +14,51 @@ settings {
   encodeUrl: true
   timeout: 0
 }
+
+docs {
+  # Subscription Cancel
+  
+  Cancel user's active subscription.
+  
+  ## Endpoint
+  POST /api/subscriptions/cancel
+  
+  ## Authentication
+  **Required** - Must include Bearer token in Authorization header
+  
+  ## Description
+  Cancels the user's current subscription. The subscription will remain active 
+  until the end of the current billing period, then will not auto-renew.
+  
+  ## Preconditions
+  - User must have an active subscription (status: 'active' or 'trialing')
+  - currentPeriodEnd must be >= current date
+  - cancelAtPeriodEnd must be false (not already cancelled)
+  
+  ## Response (200 OK)
+  ```json
+  {
+    "message": "subscriptionCancelled"
+  }
+  ```
+  
+  ## Error Responses
+  - **400 Bad Request**:
+    - `{ "message": "noActiveSubscription" }` - No active subscription found
+    - `{ "message": "subscriptionAlreadyCancelled" }` - Already set to cancel
+  - **401 Unauthorized**: Missing or invalid token
+  
+  ## Business Logic
+  1. Finds active subscription for user
+  2. Checks if not already cancelled (cancelAtPeriodEnd === false)
+  3. Updates Stripe subscription: `cancel_at_period_end: true`
+  4. Updates local database: `cancelAtPeriodEnd: true`
+  5. Subscription stays active until currentPeriodEnd
+  6. Can be reactivated before period end
+  
+  ## Use Cases
+  - User wants to cancel subscription
+  - Pro features remain available until period end
+  - No refund for remaining time
+  - Can reactivate before period end
+}

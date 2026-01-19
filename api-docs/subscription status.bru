@@ -15,6 +15,62 @@ settings {
   timeout: 0
 }
 
+docs {
+  # Subscription Status
+  
+  Get current subscription status and details.
+  
+  ## Endpoint
+  GET /api/subscriptions/status
+  
+  ## Authentication
+  **Required** - Must include Bearer token in Authorization header
+  
+  ## Description
+  Returns the current user's subscription status and details.
+  Uses `findUsableByUserId` which checks for active subscriptions with:
+  - Status: 'active' or 'trialing'
+  - currentPeriodEnd >= current date
+  
+  ## Response (200 OK)
+  
+  ### Free User (No subscription)
+  ```json
+  {
+    "isPro": false,
+    "subscription": null
+  }
+  ```
+  
+  ### Pro User (Active subscription)
+  ```json
+  {
+    "isPro": true,
+    "subscription": {
+      "status": "active",
+      "currentPeriodEnd": "2026-02-19T00:00:00.000Z",
+      "cancelAtPeriodEnd": false,
+      "planInterval": "monthly"
+    }
+  }
+  ```
+  
+  ### Subscription Fields
+  - `status`: Subscription status ("active" or "trialing")
+  - `currentPeriodEnd`: End date of current billing period
+  - `cancelAtPeriodEnd`: True if subscription is set to cancel at period end
+  - `planInterval`: Billing interval ("monthly" or "yearly")
+  
+  ## Error Responses
+  - **401 Unauthorized**: Missing or invalid token
+  
+  ## Use Cases
+  - Check if user has Pro access
+  - Display subscription info in UI
+  - Show expiration date
+  - Show cancellation status
+}
+
 example {
   name: example
   

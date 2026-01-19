@@ -22,6 +22,52 @@ settings {
   timeout: 0
 }
 
+docs {
+  # Register
+  
+  Create a new user account.
+  
+  ## Endpoint
+  POST /api/auth/register
+  
+  ## Authentication
+  Not required
+  
+  ## Request Body
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "yourpassword"
+  }
+  ```
+  
+  ## Validation Rules
+  - **email**: Must be a valid email format and not already exist in the system
+  - **password**: Must be at least 8 characters long
+  
+  ## Response (201 Created)
+  ```json
+  {
+    "id": 3,
+    "email": "user@example.com",
+    "createdAt": "2026-01-19T07:07:38.412Z",
+    "updatedAt": "2026-01-19T07:07:38.412Z"
+  }
+  ```
+  
+  ## Error Responses
+  - **409 Conflict**: `{ "message": "emailAlreadyExists" }` - Email already registered
+  - **400 Bad Request**: Validation errors (invalid email format or password too short)
+  
+  ## Use Cases
+  - New user sign up
+  - After successful registration, redirect user to login page
+  
+  ## Notes
+  - Password is hashed with bcrypt (10 rounds) before storage
+  - Password is never returned in responses
+}
+
 example {
   name: example
   

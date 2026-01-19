@@ -21,6 +21,66 @@ settings {
   timeout: 0
 }
 
+docs {
+  # Get Voices List
+  
+  Retrieve all available voices for a specific voice type.
+  
+  ## Endpoint
+  POST /api/voices/list
+  
+  ## Authentication
+  Not required
+  
+  ## Request Body
+  ```json
+  {
+    "voiceType": "edge-tts"
+  }
+  ```
+  
+  - `voiceType`: Currently only "edge-tts" is supported
+  
+  ## Description
+  Returns a list of all Microsoft Edge TTS voices supporting multiple languages, 
+  countries, and genders.
+  
+  ## Response (201 Created)
+  ```json
+  {
+    "voiceType": "edge-tts",
+    "voices": [
+      {
+        "id": "th-TH-NiwatNeural",
+        "language": "th-TH",
+        "gender": "Male",
+        "name": "Microsoft Niwat Online (Natural) - Thai (Thailand)"
+      },
+      {
+        "id": "th-TH-PremwadeeNeural",
+        "language": "th-TH",
+        "gender": "Female",
+        "name": "Microsoft Premwadee Online (Natural) - Thai (Thailand)"
+      }
+    ]
+  }
+  ```
+  
+  - `id`: Voice ID to use in generate dubbing requests
+  - `language`: Language code (ISO format, e.g., "th-TH", "en-US")
+  - `gender`: Voice gender ("Male" or "Female")
+  - `name`: Full descriptive name of the voice
+  
+  ## Error Responses
+  - **400 Bad Request**: `voiceType` is required or invalid
+  
+  ## Use Cases
+  - Display voice selection options to users
+  - Filter voices by language
+  - Filter voices by gender
+  - Get voice ID for dubbing generation
+}
+
 example {
   name: example
   

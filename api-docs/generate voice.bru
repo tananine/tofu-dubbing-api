@@ -54,6 +54,103 @@ settings {
   timeout: 0
 }
 
+docs {
+  # Generate Voice
+  
+  Generate dubbed audio files from subtitle text using AI voice synthesis.
+  
+  ## Endpoint
+  POST /api/dubbing/generate
+  
+  ## Authentication
+  Currently not required (commented out in code)
+  
+  ## Request Body
+  ```json
+  {
+    "subtitles": [
+      {
+        "sourceText": "Original text",
+        "targetText": "Translated text",
+        "index": 0,
+        "start": 0.0,
+        "end": 5.0
+      }
+    ],
+    "config": {
+      "model": "gpt-4o",
+      "voice": "th-TH-NiwatNeural",
+      "voiceType": "edge-tts",
+      "toLanguage": "th-TH"
+    },
+    "videoDetails": {
+      "videoId": "youtube_video_id",
+      "title": "Video title",
+      "subtitleLevel": 1
+    }
+  }
+  ```
+  
+  ### Subtitle Item Fields
+  - `sourceText`: Original subtitle text
+  - `targetText`: Translated text to convert to speech
+  - `index`: Subtitle sequence number
+  - `start`: Start time in seconds
+  - `end`: End time in seconds
+  
+  ### Config Fields
+  - `model`: AI model used for translation (optional, can be null)
+  - `voice`: Voice ID from voices list (e.g., "th-TH-NiwatNeural")
+  - `voiceType`: Voice provider (currently "edge-tts")
+  - `toLanguage`: Target language code (e.g., "th-TH")
+  
+  ### Video Details Fields
+  - `videoId`: Video identifier (e.g., YouTube video ID)
+  - `title`: Video title
+  - `subtitleLevel`: Subtitle track level
+  
+  ## Description
+  Converts translated subtitle text into speech audio files using Edge TTS.
+  Supports audio caching to save time and resources for repeated requests.
+  
+  ## Response (201 Created)
+  ```json
+  {
+    "message": "dubbingGenerationCompleted",
+    "videoId": "nWwvRuPQois",
+    "totalFiles": 3,
+    "successCount": 3,
+    "cachedCount": 0,
+    "generatedCount": 3,
+    "errorCount": 0,
+    "audioFiles": [
+      {
+        "index": 12,
+        "url": "https://tofu-dubbing-space.sgp1.digitaloceanspaces.com/...",
+        "text": "Translated text",
+        "start": 189.96,
+        "end": 202.92,
+        "cached": false
+      }
+    ]
+  }
+  ```
+  
+  - `message`: Status message (usually "dubbingGenerationCompleted")
+  - `videoId`: Video identifier
+  - `totalFiles`: Total number of subtitle items processed
+  - `successCount`: Number of successfully generated audio files
+  - `cachedCount`: Number of audio files loaded from cache
+  - `generatedCount`: Number of newly generated audio files
+  - `errorCount`: Number of failed generations
+  - `audioFiles`: Array of audio file objects with URLs and timing info
+  
+  ## Use Cases
+  - Generate dubbing audio for YouTube videos
+  - Convert translated subtitles to speech
+  - Create multilingual voice-overs
+}
+
 example {
   name: example
   

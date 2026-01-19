@@ -21,6 +21,58 @@ settings {
   timeout: 0
 }
 
+docs {
+  # Create Checkout Session
+  
+  Create a Stripe checkout session for subscription payment.
+  
+  ## Endpoint
+  POST /api/subscriptions/create-checkout-session
+  
+  ## Authentication
+  **Required** - Must include Bearer token in Authorization header
+  
+  ## Request Body
+  ```json
+  {
+    "planInterval": "monthly"
+  }
+  ```
+  
+  - `planInterval`: Must be either "monthly" or "yearly"
+  
+  ## Description
+  Creates a Stripe checkout session for users to subscribe to Pro plan.
+  Supports both monthly and yearly billing intervals.
+  
+  ## Response (201 Created)
+  ```json
+  {
+    "url": "https://checkout.stripe.com/c/pay/cs_live_..."
+  }
+  ```
+  
+  - `url`: Stripe checkout page URL to redirect user to
+  
+  ## Error Responses
+  - **400 Bad Request**: 
+    - `{ "message": "alreadyHaveSubscription" }` - User already has an active subscription
+    - Invalid planInterval value
+  - **401 Unauthorized**: Missing or invalid token
+  
+  ## Business Logic
+  - Checks if user already has active subscription (status: active/trialing, currentPeriodEnd >= now)
+  - If active subscription exists, returns error
+  - Creates Stripe checkout session with user's email
+  - Stores userId in session's client_reference_id
+  - Success URL includes session_id parameter
+  
+  ## Use Cases
+  - User wants to upgrade to Pro account
+  - Select billing plan (monthly/yearly)
+  - Initiate payment process
+}
+
 example {
   name: example
   

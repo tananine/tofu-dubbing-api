@@ -22,6 +22,54 @@ settings {
   timeout: 0
 }
 
+docs {
+  # Login
+  
+  Authenticate user and get access token.
+  
+  ## Endpoint
+  POST /api/auth/login
+  
+  ## Authentication
+  Not required
+  
+  ## Request Body
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "yourpassword"
+  }
+  ```
+  
+  ## Validation Rules
+  - **email**: Must be a valid email format
+  - **password**: Must be at least 6 characters long
+  
+  ## Response (201 Created)
+  ```json
+  {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "isPro": false
+  }
+  ```
+  
+  - `access_token`: JWT token for authenticating API requests
+  - `isPro`: Boolean indicating if user has an active Pro subscription
+  
+  ## Error Responses
+  - **401 Unauthorized**: Invalid email or password
+  - **400 Bad Request**: Validation errors
+  
+  ## Use Cases
+  - User login
+  - Get access token for authenticated API requests
+  
+  ## Notes
+  - Store `access_token` securely (localStorage/sessionStorage)
+  - Include token in Authorization header: `Bearer {access_token}`
+  - JWT payload contains: `{ email, sub (userId), iat (issued at) }`
+}
+
 example {
   name: example
   

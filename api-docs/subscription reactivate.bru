@@ -14,3 +14,51 @@ settings {
   encodeUrl: true
   timeout: 0
 }
+
+docs {
+  # Subscription Reactivate
+  
+  Reactivate a cancelled subscription.
+  
+  ## Endpoint
+  POST /api/subscriptions/reactivate
+  
+  ## Authentication
+  **Required** - Must include Bearer token in Authorization header
+  
+  ## Description
+  Reverses a subscription cancellation, allowing it to auto-renew at the next 
+  billing period. Can only be done before the current period ends.
+  
+  ## Preconditions
+  - User must have an active subscription (status: 'active' or 'trialing')
+  - currentPeriodEnd must be >= current date
+  - cancelAtPeriodEnd must be true (subscription is set to cancel)
+  
+  ## Response (200 OK)
+  ```json
+  {
+    "message": "subscriptionReactivated"
+  }
+  ```
+  
+  ## Error Responses
+  - **400 Bad Request**:
+    - `{ "message": "noCancellableSubscription" }` - No cancelled subscription found
+  - **401 Unauthorized**: Missing or invalid token
+  
+  ## Business Logic
+  1. Uses `findCancelableByUserId` to find subscription where:
+     - Status: 'active' or 'trialing'
+     - currentPeriodEnd >= current date
+     - cancelAtPeriodEnd === true
+  2. Updates Stripe subscription: `cancel_at_period_end: false`
+  3. Updates local database: `cancelAtPeriodEnd: false`
+  4. Subscription will now auto-renew at period end
+  
+  ## Use Cases
+  - User changes mind after cancelling
+  - Wants to continue Pro subscription
+  - Must be done before current period ends
+  - After period ends, must create new subscription
+}

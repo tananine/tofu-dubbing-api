@@ -16,7 +16,31 @@ settings {
 }
 
 docs {
-  Health Check
+  # Health Check
+  
+  Check the API server health status.
+  
+  ## Endpoint
+  GET /api
+  
+  ## Authentication
+  Not required
+  
+  ## Description
+  Returns the current status of the API server and timestamp.
+  
+  ## Response
+  ```json
+  {
+    "status": "ok",
+    "timestamp": "2026-01-19T04:55:47.606Z"
+  }
+  ```
+  
+  ## Use Cases
+  - Health check monitoring
+  - API connectivity verification
+  - Server status checking
 }
 
 example {
