@@ -3,7 +3,9 @@ import {
   Body,
   Controller,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { VoicesService } from './voices.service.js';
 import { VoiceListRequestDto } from './dto/voice-list.dto.js';
 
@@ -12,6 +14,7 @@ export class VoicesController {
   constructor(private readonly voicesService: VoicesService) {}
 
   @Post('list')
+  @UseGuards(JwtAuthGuard)
   async getVoiceListByType(@Body() body: VoiceListRequestDto) {
     const voiceType = body?.voiceType?.trim().toLowerCase();
 

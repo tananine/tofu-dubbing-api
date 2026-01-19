@@ -1,4 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard.js';
 import { AI_MODELS } from './common/ai-models.constants.js';
 
 @Controller()
@@ -9,6 +10,7 @@ export class AppController {
   }
 
   @Get('ai-models')
+  @UseGuards(JwtAuthGuard)
   getAIModels() {
     return { models: AI_MODELS };
   }
