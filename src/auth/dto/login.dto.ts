@@ -7,6 +7,6 @@ export class LoginDto {
 
   @IsString()
   @IsNotEmpty()
-  @MinLength(6)
+  @MinLength(8)
   password!: string;
 }
