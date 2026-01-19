@@ -1,0 +1,56 @@
+meta {
+  name: health check
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://tofu-dubbing-api.dolishco.com/api
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+example {
+  name: example
+  
+  request: {
+    url: https://tofu-dubbing-api.dolishco.com/api
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    headers: {
+      access-control-allow-credentials: true
+      access-control-allow-origin: *
+      access-control-expose-headers: *
+      alt-svc: h3=":443"; ma=2592000
+      content-length: 54
+      content-type: application/json; charset=utf-8
+      date: Mon, 19 Jan 2026 04:55:47 GMT
+      etag: W/"36-UQ1Ob5qRSKim5pwzryvbsVrlY3M"
+      via: 1.1 Caddy
+      x-powered-by: Express
+    }
+  
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "status": "ok",
+          "timestamp": "2026-01-19T04:55:47.606Z"
+        }
+      '''
+    }
+  }
+}

@@ -1,0 +1,66 @@
+meta {
+  name: create checkout
+  type: http
+  seq: 10
+}
+
+post {
+  url: https://tofu-dubbing-api.dolishco.com/api/subscriptions/create-checkout-session
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "planInterval": "monthly"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+example {
+  name: example
+  
+  request: {
+    url: https://tofu-dubbing-api.dolishco.com/api/subscriptions/create-checkout-session
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "planInterval": "monthly"
+      }
+    }
+  }
+  
+  response: {
+    headers: {
+      access-control-allow-credentials: true
+      access-control-allow-origin: *
+      access-control-expose-headers: *
+      alt-svc: h3=":443"; ma=2592000
+      content-length: 497
+      content-type: application/json; charset=utf-8
+      date: Mon, 19 Jan 2026 07:13:46 GMT
+      etag: W/"1f1-WZFpTZfjpjUWN5PXzQsJ95sAJJQ"
+      via: 1.1 Caddy
+      x-powered-by: Express
+    }
+  
+    status: {
+      code: 201
+      text: Created
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "url": "https://checkout.stripe.com/c/pay/cs_live_a1N6kX2JgpwLsuYhY4WLpuRxBiOz0oRAxH9tqaQlBagODBRkTv7Y22hxpt#fidnandhYHdWcXxpYCc%2FJ2FgY2RwaXEnKSd2cGd2ZndsdXFsamtQa2x0cGBrYHZ2QGtkZ2lgYSc%2FY2RpdmApJ2R1bE5gfCc%2FJ3VuWmlsc2BaMDRWU1ZJd1VtND00bU1fN088NkA8XXAzSUAyQkdwbGdoS0J1RkptMjBVa3JnRm8wXTUwMXJ1YmtvQkhNMExNXU9JVDQwcV1QbzU1QDdMdFIxdTR1QjZPRkA1NTBWPX9zVWIxJyknY3dqaFZgd3Ngdyc%2FcXdwYCknZ2RmbmJ3anBrYUZqaWp3Jz8nJmNjY2NjYycpJ2lkfGpwcVF8dWAnPyd2bGtiaWBabHFgaCcpJ2BrZGdpYFVpZGZgbWppYWB3dic%2FcXdwYHgl"
+        }
+      '''
+    }
+  }
+}

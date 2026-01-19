@@ -1,0 +1,59 @@
+meta {
+  name: get profile
+  type: http
+  seq: 4
+}
+
+get {
+  url: https://tofu-dubbing-api.dolishco.com/api/auth/profile
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+example {
+  name: example
+  
+  request: {
+    url: https://tofu-dubbing-api.dolishco.com/api/auth/profile
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    headers: {
+      access-control-allow-credentials: true
+      access-control-allow-origin: *
+      access-control-expose-headers: *
+      alt-svc: h3=":443"; ma=2592000
+      content-length: 127
+      content-type: application/json; charset=utf-8
+      date: Mon, 19 Jan 2026 07:10:19 GMT
+      etag: W/"7f-JSeUychWbc9n+FyjiiuZojqXumo"
+      via: 1.1 Caddy
+      x-powered-by: Express
+    }
+  
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "id": 2,
+          "email": "test@example.com",
+          "createdAt": "2025-12-22T08:22:58.420Z",
+          "updatedAt": "2025-12-22T08:22:58.420Z",
+          "isPro": false
+        }
+      '''
+    }
+  }
+}

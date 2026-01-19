@@ -1,0 +1,69 @@
+meta {
+  name: login
+  type: http
+  seq: 6
+}
+
+post {
+  url: https://tofu-dubbing-api.dolishco.com/api/auth/login
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "test@example.com",
+    "password": "12345678"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+example {
+  name: example
+  
+  request: {
+    url: https://tofu-dubbing-api.dolishco.com/api/auth/login
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "email": "test@example.com",
+        "password": "12345678"
+      }
+    }
+  }
+  
+  response: {
+    headers: {
+      access-control-allow-credentials: true
+      access-control-allow-origin: *
+      access-control-expose-headers: *
+      alt-svc: h3=":443"; ma=2592000
+      content-length: 185
+      content-type: application/json; charset=utf-8
+      date: Mon, 19 Jan 2026 05:09:54 GMT
+      etag: W/"b9-9o3asmCRDlheT9eKwxPAqklA3+M"
+      via: 1.1 Caddy
+      x-powered-by: Express
+    }
+  
+    status: {
+      code: 201
+      text: Created
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJzdWIiOjIsImlhdCI6MTc2ODc5OTM5NH0.LaI62UtQ9-SsOs4rA6YWwRBN1PBF-y-7hNHixZxjtwo",
+          "isPro": false
+        }
+      '''
+    }
+  }
+}
