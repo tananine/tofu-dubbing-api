@@ -26,10 +26,6 @@ export class TranslationService {
     switch (provider) {
       case AIProvider.OPENAI:
         return this.translateWithOpenAI(params);
-      case AIProvider.CLAUDE:
-        return this.translateWithClaude(params);
-      case AIProvider.GEMINI:
-        return this.translateWithGemini(params);
       default:
         throw new Error(`Unsupported AI provider: ${provider}`);
     }
@@ -61,17 +57,5 @@ Only return the translated text without any additional explanations, quotes, or 
     }
 
     return translatedText;
-  }
-
-  private async translateWithClaude(
-    params: TranslateTextParams,
-  ): Promise<string> {
-    throw new Error('Claude translation not yet implemented');
-  }
-
-  private async translateWithGemini(
-    params: TranslateTextParams,
-  ): Promise<string> {
-    throw new Error('Gemini translation not yet implemented');
   }
 }

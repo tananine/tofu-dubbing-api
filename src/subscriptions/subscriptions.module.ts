@@ -10,4 +10,3 @@ import { DatabaseModule } from '../database/database.module.js';
   exports: [SubscriptionsService],
 })
 export class SubscriptionsModule {}
-

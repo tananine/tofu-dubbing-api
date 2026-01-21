@@ -13,8 +13,6 @@ export class VoicesService {
     switch (voiceType) {
       case 'edge-tts':
         return this.getEdgeTtsVoices();
-      case 'azure-tts':
-        return [];
       default:
         throw new BadRequestException(`Unsupported voiceType: ${voiceType}`);
     }

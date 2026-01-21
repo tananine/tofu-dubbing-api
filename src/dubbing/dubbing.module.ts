@@ -5,9 +5,8 @@ import { StorageModule } from '../storage/storage.module.js';
 import { TranslationModule } from '../translation/translation.module.js';
 
 @Module({
-  imports: [StorageModule, TranslationModule],
   controllers: [DubbingController],
+  imports: [StorageModule, TranslationModule],
   providers: [DubbingService],
 })
 export class DubbingModule {}
-

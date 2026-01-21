@@ -7,4 +7,3 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
   controllers: [StripeWebhookController],
 })
 export class WebhooksModule {}
-

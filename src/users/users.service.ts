@@ -35,5 +35,3 @@ export class UsersService {
     return result[0];
   }
 }
-
-
