@@ -96,6 +96,14 @@ export class StripeWebhookController {
     const planInterval =
       stripeSubscription.items?.data?.[0]?.price?.recurring?.interval;
 
+    if (
+      !stripeSubscription.current_period_start ||
+      !stripeSubscription.current_period_end
+    ) {
+      console.error('Invalid subscription period timestamps from Stripe');
+      return;
+    }
+
     await this.subscriptionsService.createOrUpdate({
       userId: parseInt(userId, 10),
       stripeCustomerId: customerId,
@@ -131,6 +139,14 @@ export class StripeWebhookController {
     const priceId = stripeSubscription.items?.data?.[0]?.price?.id;
     const planInterval =
       stripeSubscription.items?.data?.[0]?.price?.recurring?.interval;
+
+    if (
+      !stripeSubscription.current_period_start ||
+      !stripeSubscription.current_period_end
+    ) {
+      console.error('Invalid subscription period timestamps from Stripe');
+      return;
+    }
 
     await this.subscriptionsService.updateByStripeSubscriptionId(
       stripeSubscription.id,
@@ -172,6 +188,14 @@ export class StripeWebhookController {
     const priceId = stripeSubscription.items?.data?.[0]?.price?.id;
     const planInterval =
       stripeSubscription.items?.data?.[0]?.price?.recurring?.interval;
+
+    if (
+      !stripeSubscription.current_period_start ||
+      !stripeSubscription.current_period_end
+    ) {
+      console.error('Invalid subscription period timestamps from Stripe');
+      return;
+    }
 
     await this.subscriptionsService.updateByStripeSubscriptionId(
       subscriptionId,
