@@ -1,0 +1,97 @@
+meta {
+  name: get usage today
+  type: http
+  seq: 5
+}
+
+get {
+  url: https://tofu-dubbing-api.dolishco.com/api/usage/today
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+docs {
+  # Get Usage Today
+  
+  Get the authenticated user's audio generation usage for today.
+  
+  ## Endpoint
+  GET /api/usage/today
+  
+  ## Authentication
+  **Required** - Must include Bearer token in Authorization header
+  
+  ## Description
+  Returns the current user's audio generation statistics for the current day. The usage automatically resets at midnight (00:00) each day.
+  
+  ## Response (200 OK)
+  ```json
+  {
+    "audioDuration": 120.5,
+    "audioCount": 15
+  }
+  ```
+  
+  - `audioDuration`: Total duration of generated audio in seconds (float)
+  - `audioCount`: Total number of audio files generated today (integer)
+  
+  ## Notes
+  - Only counts newly generated audio files (cached files are not counted)
+  - Duration is measured in seconds with decimal precision
+  - Usage resets automatically at the start of each new day
+  - Historical data is preserved in the database for future analytics
+  
+  ## Error Responses
+  - **401 Unauthorized**: Missing or invalid token
+  
+  ## Use Cases
+  - Display daily usage statistics in UI
+  - Check remaining daily quota
+  - Monitor user's audio generation activity
+  - Enforce daily usage limits
+}
+
+example {
+  name: example
+  
+  request: {
+    url: https://tofu-dubbing-api.dolishco.com/api/usage/today
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    headers: {
+      access-control-allow-credentials: true
+      access-control-allow-origin: *
+      access-control-expose-headers: *
+      alt-svc: h3=":443"; ma=2592000
+      content-length: 51
+      content-type: application/json; charset=utf-8
+      date: Fri, 23 Jan 2026 08:27:47 GMT
+      etag: W/"33-7X6QhKoC0YEn1e3sAzXqNunb6FA"
+      via: 1.1 Caddy
+      x-powered-by: Express
+    }
+  
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "audioDuration": 0,
+          "audioCount": 0
+        }
+      '''
+    }
+  }
+}

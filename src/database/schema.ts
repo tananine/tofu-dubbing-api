@@ -5,6 +5,8 @@ import {
   timestamp,
   integer,
   boolean,
+  date,
+  real,
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
@@ -37,3 +39,18 @@ export const subscriptions = pgTable('subscriptions', {
 
 export type Subscription = typeof subscriptions.$inferSelect;
 export type NewSubscription = typeof subscriptions.$inferInsert;
+
+export const usageLogs = pgTable('usage_logs', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id),
+  date: date('date').notNull(),
+  audioDuration: real('audio_duration').default(0).notNull(),
+  audioCount: integer('audio_count').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type UsageLog = typeof usageLogs.$inferSelect;
+export type NewUsageLog = typeof usageLogs.$inferInsert;

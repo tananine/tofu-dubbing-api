@@ -2,6 +2,7 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service.js';
+import { UsageLogsService } from '../users/usage-logs.service.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { MessageCodes } from '../common/message-codes.js';
@@ -12,6 +13,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private subscriptionsService: SubscriptionsService,
+    private usageLogsService: UsageLogsService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -37,7 +39,13 @@ export class AuthService {
     if (!user) return null;
     const { password: _, ...result } = user;
     const isPro = await this.subscriptionsService.isPro(userId);
-    return { ...result, isPro };
+    const todayUsage = await this.usageLogsService.getTodayUsage(userId);
+    
+    return { 
+      ...result, 
+      isPro,
+      audioUsage: todayUsage,
+    };
   }
 
   async register(registerDto: RegisterDto) {

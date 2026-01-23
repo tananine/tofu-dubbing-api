@@ -2,12 +2,14 @@ import { Injectable, ForbiddenException } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { parseBuffer } from 'music-metadata';
 import { GenerateDubbingDto } from './dto/generate-dubbing.dto.js';
 import { StorageService } from '../storage/storage.service.js';
 import { MessageCodes } from '../common/message-codes.js';
 import { TranslationService } from '../translation/translation.service.js';
 import { getAIProvider, isAIModel } from '../common/ai-models.constants.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
+import { UsageLogsService } from '../users/usage-logs.service.js';
 
 const execAsync = promisify(exec);
 
@@ -20,6 +22,7 @@ export interface AudioFile {
   key: string;
   url: string;
   cached: boolean;
+  duration?: number; // ความยาวของเสียงเป็นวินาที
 }
 
 export interface AudioError {
@@ -37,6 +40,7 @@ export class DubbingService {
     private readonly storageService: StorageService,
     private readonly translationService: TranslationService,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly usageLogsService: UsageLogsService,
   ) {}
 
   private roundToTwoDecimals(value: number): number {
@@ -54,7 +58,6 @@ export class DubbingService {
   async generateDubbing(generateDubbingDto: GenerateDubbingDto, userId: number) {
     const { subtitles, config, videoDetails } = generateDubbingDto;
 
-    // ตรวจสอบว่าถ้าใช้ AI model ต้องเป็น pro เท่านั้น
     if (config.model && isAIModel(config.model)) {
       const isPro = await this.subscriptionsService.isPro(userId);
       if (!isPro) {
@@ -74,6 +77,8 @@ export class DubbingService {
     );
 
     await this.uploadGeneratedAudioFiles(audioFiles);
+
+    await this.trackAudioDuration(audioFiles, userId);
 
     return this.buildResponse(audioFiles, errors, videoDetails.videoId);
   }
@@ -190,6 +195,17 @@ export class DubbingService {
       maxBuffer: this.MAX_BUFFER_SIZE,
     });
 
+    let duration = 0;
+    try {
+      const metadata = await parseBuffer(
+        stdout as Buffer,
+        { mimeType: 'audio/mpeg' },
+      );
+      duration = metadata.format.duration || 0;
+    } catch (error) {
+      console.error('Error parsing audio metadata:', error);
+    }
+
     return {
       index: subtitle.index,
       buffer: stdout as Buffer,
@@ -199,6 +215,7 @@ export class DubbingService {
       key,
       url: '',
       cached: false,
+      duration,
     };
   }
 
@@ -225,6 +242,25 @@ export class DubbingService {
     });
   }
 
+  private async trackAudioDuration(
+    audioFiles: AudioFile[],
+    userId: number,
+  ): Promise<void> {
+    const newAudioFiles = audioFiles.filter((a) => !a.cached);
+    const totalDuration = newAudioFiles.reduce(
+      (sum, audio) => sum + (audio.duration || 0),
+      0,
+    );
+
+    if (totalDuration > 0) {
+      await this.usageLogsService.incrementDailyUsage(
+        userId,
+        totalDuration,
+        newAudioFiles.length,
+      );
+    }
+  }
+
   private buildResponse(
     audioFiles: AudioFile[],
     errors: AudioError[],
@@ -232,13 +268,14 @@ export class DubbingService {
   ) {
     const cachedCount = audioFiles.filter((a) => a.cached).length;
     const audioFilesWithUrls = audioFiles.map(
-      ({ index, url, text, start, end, cached }) => ({
+      ({ index, url, text, start, end, cached, duration }) => ({
         index,
         url,
         text,
         start,
         end,
         cached,
+        duration,
       }),
     );
 
