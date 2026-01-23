@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -7,6 +7,7 @@ import { StorageService } from '../storage/storage.service.js';
 import { MessageCodes } from '../common/message-codes.js';
 import { TranslationService } from '../translation/translation.service.js';
 import { getAIProvider, isAIModel } from '../common/ai-models.constants.js';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 
 const execAsync = promisify(exec);
 
@@ -35,6 +36,7 @@ export class DubbingService {
   constructor(
     private readonly storageService: StorageService,
     private readonly translationService: TranslationService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   private roundToTwoDecimals(value: number): number {
@@ -49,8 +51,16 @@ export class DubbingService {
     };
   }
 
-  async generateDubbing(generateDubbingDto: GenerateDubbingDto) {
+  async generateDubbing(generateDubbingDto: GenerateDubbingDto, userId: number) {
     const { subtitles, config, videoDetails } = generateDubbingDto;
+
+    // ตรวจสอบว่าถ้าใช้ AI model ต้องเป็น pro เท่านั้น
+    if (config.model && isAIModel(config.model)) {
+      const isPro = await this.subscriptionsService.isPro(userId);
+      if (!isPro) {
+        throw new ForbiddenException(MessageCodes.AI_MODEL_REQUIRES_PRO);
+      }
+    }
 
     const audioFiles: AudioFile[] = [];
     const errors: AudioError[] = [];

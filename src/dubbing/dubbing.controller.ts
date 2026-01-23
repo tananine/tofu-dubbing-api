@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { DubbingService } from './dubbing.service.js';
 import { GenerateDubbingDto } from './dto/generate-dubbing.dto.js';
@@ -9,7 +9,7 @@ export class DubbingController {
 
   @Post('generate')
   @UseGuards(JwtAuthGuard)
-  async generateDubbing(@Body() generateDubbingDto: GenerateDubbingDto) {
-    return this.dubbingService.generateDubbing(generateDubbingDto);
+  async generateDubbing(@Body() generateDubbingDto: GenerateDubbingDto, @Request() req: any) {
+    return this.dubbingService.generateDubbing(generateDubbingDto, req.user.id);
   }
 }

@@ -8,6 +8,7 @@ export const MessageCodes = {
   SUBSCRIPTION_CANCELLED: 'subscriptionCancelled',
   SUBSCRIPTION_REACTIVATED: 'subscriptionReactivated',
   PRO_SUBSCRIPTION_REQUIRED: 'proSubscriptionRequired',
+  AI_MODEL_REQUIRES_PRO: 'aiModelRequiresPro',
   WEBHOOK_SECRET_NOT_CONFIGURED: 'webhookSecretNotConfigured',
   INVALID_SIGNATURE: 'invalidSignature',
   UNKNOWN_ERROR: 'unknownError',
