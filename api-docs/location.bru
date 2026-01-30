@@ -14,3 +14,47 @@ settings {
   encodeUrl: true
   timeout: 0
 }
+
+example {
+  name: example
+  
+  request: {
+    url: https://tofu-dubbing-api.dolishco.com/api/location/detect
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    headers: {
+      access-control-allow-credentials: true
+      access-control-allow-origin: *
+      access-control-expose-headers: *
+      alt-svc: h3=":443"; ma=2592000
+      content-length: 111
+      content-type: application/json; charset=utf-8
+      date: Fri, 30 Jan 2026 06:03:08 GMT
+      etag: W/"6f-fz8c8A4FStpZIYV12gqS7KSO5mA"
+      via: 1.1 Caddy
+      x-powered-by: Express
+    }
+  
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "ip": "49.48.149.50",
+          "country": "TH",
+          "currency": "THB",
+          "region": "40",
+          "city": "Ban Phai",
+          "timezone": "Asia/Bangkok"
+        }
+      '''
+    }
+  }
+}
