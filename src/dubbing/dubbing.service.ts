@@ -1,8 +1,9 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { createHash } from 'crypto';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { parseBuffer } from 'music-metadata';
+import * as cleanTextUtils from 'clean-text-utils';
 import { GenerateDubbingDto } from './dto/generate-dubbing.dto.js';
 import { StorageService } from '../storage/storage.service.js';
 import { MessageCodes } from '../common/message-codes.js';
@@ -11,7 +12,7 @@ import { getAIProvider, isAIModel } from '../common/ai-models.constants.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { UsageLogsService } from '../users/usage-logs.service.js';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export interface AudioFile {
   index: number;
@@ -22,7 +23,7 @@ export interface AudioFile {
   key: string;
   url: string;
   cached: boolean;
-  duration?: number; // ความยาวของเสียงเป็นวินาที
+  duration?: number;
 }
 
 export interface AudioError {
@@ -55,7 +56,10 @@ export class DubbingService {
     };
   }
 
-  async generateDubbing(generateDubbingDto: GenerateDubbingDto, userId: number) {
+  async generateDubbing(
+    generateDubbingDto: GenerateDubbingDto,
+    userId: number,
+  ) {
     const { subtitles, config, videoDetails } = generateDubbingDto;
 
     if (config.model && isAIModel(config.model)) {
@@ -187,23 +191,33 @@ export class DubbingService {
     config: any,
     key: string,
   ): Promise<AudioFile> {
-    const escapedText = subtitle.targetText.replace(/"/g, '\\"');
-    const command = `python3 ${this.SCRIPT_PATH} "${escapedText}" "${config.voice}"`;
+    let cleanedText = subtitle.targetText;
 
-    const { stdout } = await execAsync(command, {
-      encoding: 'buffer',
-      maxBuffer: this.MAX_BUFFER_SIZE,
-    });
+    cleanedText = cleanTextUtils.strip.emoji(cleanedText);
+    cleanedText = cleanTextUtils.strip.bom(cleanedText);
+    cleanedText = cleanTextUtils.strip.newlines(cleanedText);
+
+    cleanedText = cleanTextUtils.replace.diacritics(cleanedText);
+    cleanedText = cleanTextUtils.replace.smartChars(cleanedText);
+
+    cleanedText = cleanTextUtils.strip.extraSpace(cleanedText);
+
+    const { stdout } = await execFileAsync(
+      'python3',
+      [this.SCRIPT_PATH, cleanedText, config.voice],
+      {
+        encoding: 'buffer',
+        maxBuffer: this.MAX_BUFFER_SIZE,
+      },
+    );
 
     let duration = 0;
     try {
-      const metadata = await parseBuffer(
-        stdout as Buffer,
-        { mimeType: 'audio/mpeg' },
-      );
+      const metadata = await parseBuffer(stdout as Buffer, {
+        mimeType: 'audio/mpeg',
+      });
       duration = metadata.format.duration || 0;
     } catch (error) {
-      console.error('Error parsing audio metadata:', error);
     }
 
     return {

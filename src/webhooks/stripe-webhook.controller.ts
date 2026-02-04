@@ -4,7 +4,6 @@ import {
   Headers,
   BadRequestException,
   Req,
-  Logger,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -20,7 +19,6 @@ import {
 
 @Controller('webhooks')
 export class StripeWebhookController {
-  private readonly logger = new Logger(StripeWebhookController.name);
   private stripe: Stripe;
 
   constructor(
@@ -60,10 +58,6 @@ export class StripeWebhookController {
     try {
       await this.processWebhookEvent(event);
     } catch (error) {
-      this.logger.error('Error handling webhook event', {
-        type: event.type,
-        error: error instanceof Error ? error.message : error,
-      });
     }
 
     return { received: true };
@@ -111,12 +105,10 @@ export class StripeWebhookController {
     const subscriptionId = session.subscription as string;
 
     if (!userId) {
-      this.logger.error('Missing userId in checkout session');
       return;
     }
 
     if (!subscriptionId) {
-      this.logger.error('Missing subscription ID in checkout session');
       return;
     }
 
@@ -145,7 +137,6 @@ export class StripeWebhookController {
       }
       
       if (!currentPeriodStart || !currentPeriodEnd) {
-        this.logger.error('Cannot find valid period timestamps');
         return;
       }
 
@@ -161,11 +152,6 @@ export class StripeWebhookController {
         cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
       });
     } catch (error) {
-      this.logger.error('Error in handleCheckoutSessionCompleted', {
-        error: error instanceof Error ? error.message : error,
-        userId,
-        subscriptionId,
-      });
       throw error;
     }
   }
@@ -277,7 +263,6 @@ export class StripeWebhookController {
     data: ExtractedSubscriptionData,
   ): boolean {
     if (!data.currentPeriodStart || !data.currentPeriodEnd) {
-      this.logger.error('Invalid subscription period timestamps');
       return false;
     }
     return true;
