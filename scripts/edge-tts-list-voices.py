@@ -28,7 +28,7 @@ async def list_voices() -> list[dict]:
             "id": voice.get("ShortName"),
             "language": voice.get("Locale"),
             "gender": voice.get("Gender"),
-            "name": voice.get("FriendlyName"),
+            "name": voice.get("FriendlyName", "").replace("Microsoft ", ""),
             "flag": get_country_flag(voice.get("Locale", "")),
         }
         for voice in voices
