@@ -36,7 +36,6 @@
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
-    "clean-text-utils": "^1.1.17",
     "drizzle-orm": "^0.44.7",
     "geoip-lite": "^1.4.10",
     "music-metadata": "^11.10.6",

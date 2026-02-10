@@ -3,7 +3,6 @@ import { createHash } from 'crypto';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { parseBuffer } from 'music-metadata';
-import * as cleanTextUtils from 'clean-text-utils';
 import { GenerateDubbingDto } from './dto/generate-dubbing.dto.js';
 import { StorageService } from '../storage/storage.service.js';
 import { MessageCodes } from '../common/message-codes.js';
@@ -193,15 +192,6 @@ export class DubbingService {
   ): Promise<AudioFile> {
     let cleanedText = subtitle.targetText;
 
-    cleanedText = cleanTextUtils.strip.emoji(cleanedText);
-    cleanedText = cleanTextUtils.strip.bom(cleanedText);
-    cleanedText = cleanTextUtils.strip.newlines(cleanedText);
-
-    cleanedText = cleanTextUtils.replace.diacritics(cleanedText);
-    cleanedText = cleanTextUtils.replace.smartChars(cleanedText);
-
-    cleanedText = cleanTextUtils.strip.extraSpace(cleanedText);
-
     const { stdout } = await execFileAsync(
       'python3',
       [this.SCRIPT_PATH, cleanedText, config.voice],
@@ -217,8 +207,7 @@ export class DubbingService {
         mimeType: 'audio/mpeg',
       });
       duration = metadata.format.duration || 0;
-    } catch (error) {
-    }
+    } catch (error) {}
 
     return {
       index: subtitle.index,
