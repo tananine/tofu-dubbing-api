@@ -42,8 +42,8 @@ docs {
   ```
   
   ## Validation Rules
-  - **email**: Must be a valid email format and not already exist in the system
-  - **password**: Must be at least 8 characters long
+  - **email**: Valid email format, max 80 characters, not already exist in the system
+  - **password**: Must be 8-16 characters
   
   ## Response (201 Created)
   ```json
@@ -57,7 +57,7 @@ docs {
   
   ## Error Responses
   - **409 Conflict**: `{ "message": "emailAlreadyExists" }` - Email already registered
-  - **400 Bad Request**: Validation errors (invalid email format or password too short)
+  - **400 Bad Request**: Validation errors (invalid email, email too long, password length not 8-16)
   
   ## Use Cases
   - New user sign up
