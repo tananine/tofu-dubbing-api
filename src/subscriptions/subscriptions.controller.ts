@@ -131,7 +131,12 @@ export class SubscriptionsController {
         status: subscription.status,
         currentPeriodEnd: subscription.currentPeriodEnd,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-        planInterval: subscription.planInterval,
+        planInterval:
+          subscription.planInterval === 'month'
+            ? 'monthly'
+            : subscription.planInterval === 'year'
+            ? 'yearly'
+            : subscription.planInterval,
       },
     };
   }

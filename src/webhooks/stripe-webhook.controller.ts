@@ -117,12 +117,14 @@ export class StripeWebhookController {
         subscriptionId,
         {
           expand: ['items.data.price', 'latest_invoice.lines'],
-        }
+        },
       );
-      
+
       const priceId = stripeSubscription.items?.data?.[0]?.price?.id;
-      const planInterval = stripeSubscription.items?.data?.[0]?.price?.recurring?.interval;
-      
+      const planInterval = this.mapStripeIntervalToPlanInterval(
+        stripeSubscription.items?.data?.[0]?.price?.recurring?.interval,
+      );
+
       let currentPeriodStart = stripeSubscription.current_period_start;
       let currentPeriodEnd = stripeSubscription.current_period_end;
       
@@ -246,8 +248,9 @@ export class StripeWebhookController {
     subscription: StripeSubscriptionExtended,
   ): ExtractedSubscriptionData {
     const priceId = subscription.items?.data?.[0]?.price?.id;
-    const planInterval =
-      subscription.items?.data?.[0]?.price?.recurring?.interval;
+    const planInterval = this.mapStripeIntervalToPlanInterval(
+      subscription.items?.data?.[0]?.price?.recurring?.interval,
+    );
 
     return {
       priceId,
@@ -266,5 +269,23 @@ export class StripeWebhookController {
       return false;
     }
     return true;
+  }
+
+  private mapStripeIntervalToPlanInterval(
+    interval: string | null | undefined,
+  ): string | undefined {
+    if (!interval) {
+      return undefined;
+    }
+
+    if (interval === 'month') {
+      return 'monthly';
+    }
+
+    if (interval === 'year') {
+      return 'yearly';
+    }
+
+    return interval;
   }
 }
