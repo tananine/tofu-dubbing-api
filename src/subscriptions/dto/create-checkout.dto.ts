@@ -1,4 +1,4 @@
-import { IsEnum } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export enum PlanInterval {
   MONTHLY = 'monthly',
@@ -8,4 +8,8 @@ export enum PlanInterval {
 export class CreateCheckoutDto {
   @IsEnum(PlanInterval)
   planInterval!: PlanInterval;
+
+  @IsOptional()
+  @IsString()
+  currency?: string;
 }

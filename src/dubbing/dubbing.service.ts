@@ -1,15 +1,21 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, Inject } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { parseBuffer } from 'music-metadata';
+import { sql } from 'drizzle-orm';
+import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { GenerateDubbingDto } from './dto/generate-dubbing.dto.js';
+import { StartDubbingDto } from './dto/start-dubbing.dto.js';
 import { StorageService } from '../storage/storage.service.js';
 import { MessageCodes } from '../common/message-codes.js';
 import { TranslationService } from '../translation/translation.service.js';
 import { getAIProvider, isAIModel } from '../common/ai-models.constants.js';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service.js';
 import { UsageLogsService } from '../users/usage-logs.service.js';
+import { DATABASE_CONNECTION } from '../database/database.module.js';
+import * as schema from '../database/schema.js';
+import { dubbingLogs, aiModelUsage } from '../database/schema.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -23,6 +29,12 @@ export interface AudioFile {
   url: string;
   cached: boolean;
   duration?: number;
+  tokenUsage?: {
+    inputTokens: number;
+    outputTokens: number;
+    cachedTokens: number;
+    cacheWriteTokens: number;
+  };
 }
 
 export interface AudioError {
@@ -41,6 +53,8 @@ export class DubbingService {
     private readonly translationService: TranslationService,
     private readonly subscriptionsService: SubscriptionsService,
     private readonly usageLogsService: UsageLogsService,
+    @Inject(DATABASE_CONNECTION)
+    private readonly db: PostgresJsDatabase<typeof schema>,
   ) {}
 
   private roundToTwoDecimals(value: number): number {
@@ -53,6 +67,20 @@ export class DubbingService {
       start: this.roundToTwoDecimals(subtitle.start),
       end: this.roundToTwoDecimals(subtitle.end),
     };
+  }
+
+  async startSession(
+    dto: StartDubbingDto,
+    userId: number,
+  ): Promise<{ isPro: boolean }> {
+    const isPro = await this.subscriptionsService.isPro(userId);
+    await this.db.insert(dubbingLogs).values({
+      userId,
+      sourceLanguage: dto.sourceLanguage,
+      targetLanguage: dto.targetLanguage,
+      isPro,
+    });
+    return { isPro };
   }
 
   async generateDubbing(
@@ -81,7 +109,7 @@ export class DubbingService {
 
     await this.uploadGeneratedAudioFiles(audioFiles);
 
-    await this.trackAudioDuration(audioFiles, userId);
+    await this.trackAudioDuration(audioFiles, userId, config.model);
 
     return this.buildResponse(audioFiles, errors, videoDetails.videoId);
   }
@@ -131,11 +159,13 @@ export class DubbingService {
   ): Promise<AudioFile> {
     const normalizedSubtitle = this.normalizeSubtitleTimestamps(subtitle);
 
+    let tokenUsage: AudioFile['tokenUsage'];
+
     if (config.model && isAIModel(config.model)) {
       const provider = getAIProvider(config.model);
       if (provider) {
         try {
-          const translatedText = await this.translationService.translateText(
+          const result = await this.translationService.translateText(
             {
               text: normalizedSubtitle.sourceText,
               fromLanguage: 'auto',
@@ -144,7 +174,8 @@ export class DubbingService {
             },
             provider,
           );
-          normalizedSubtitle.targetText = translatedText;
+          normalizedSubtitle.targetText = result.text;
+          tokenUsage = result.usage;
         } catch (error) {}
       }
     }
@@ -156,7 +187,12 @@ export class DubbingService {
       return this.createCachedAudioFile(normalizedSubtitle, key);
     }
 
-    return this.generateNewAudioFile(normalizedSubtitle, config, key);
+    const audioFile = await this.generateNewAudioFile(
+      normalizedSubtitle,
+      config,
+      key,
+    );
+    return { ...audioFile, tokenUsage };
   }
 
   private buildStorageKey(
@@ -248,6 +284,7 @@ export class DubbingService {
   private async trackAudioDuration(
     audioFiles: AudioFile[],
     userId: number,
+    model?: string,
   ): Promise<void> {
     const newAudioFiles = audioFiles.filter((a) => !a.cached);
     const totalDuration = newAudioFiles.reduce(
@@ -262,6 +299,58 @@ export class DubbingService {
         newAudioFiles.length,
       );
     }
+
+    if (!model || !isAIModel(model)) return;
+
+    const subscription =
+      await this.subscriptionsService.findActiveByUserId(userId);
+    if (!subscription) return;
+
+    const totalInputTokens = newAudioFiles.reduce(
+      (sum, a) => sum + (a.tokenUsage?.inputTokens ?? 0),
+      0,
+    );
+    const totalOutputTokens = newAudioFiles.reduce(
+      (sum, a) => sum + (a.tokenUsage?.outputTokens ?? 0),
+      0,
+    );
+    const totalCachedTokens = newAudioFiles.reduce(
+      (sum, a) => sum + (a.tokenUsage?.cachedTokens ?? 0),
+      0,
+    );
+    const totalCacheWriteTokens = newAudioFiles.reduce(
+      (sum, a) => sum + (a.tokenUsage?.cacheWriteTokens ?? 0),
+      0,
+    );
+
+    await this.db
+      .insert(aiModelUsage)
+      .values({
+        subscriptionId: subscription.id,
+        userId,
+        model,
+        periodStart: subscription.currentPeriodStart,
+        totalDuration,
+        inputTokens: totalInputTokens,
+        outputTokens: totalOutputTokens,
+        cachedTokens: totalCachedTokens,
+        cacheWriteTokens: totalCacheWriteTokens,
+      })
+      .onConflictDoUpdate({
+        target: [
+          aiModelUsage.subscriptionId,
+          aiModelUsage.periodStart,
+          aiModelUsage.model,
+        ],
+        set: {
+          totalDuration: sql`${aiModelUsage.totalDuration} + ${totalDuration}`,
+          inputTokens: sql`${aiModelUsage.inputTokens} + ${totalInputTokens}`,
+          outputTokens: sql`${aiModelUsage.outputTokens} + ${totalOutputTokens}`,
+          cachedTokens: sql`${aiModelUsage.cachedTokens} + ${totalCachedTokens}`,
+          cacheWriteTokens: sql`${aiModelUsage.cacheWriteTokens} + ${totalCacheWriteTokens}`,
+          updatedAt: new Date(),
+        },
+      });
   }
 
   private buildResponse(

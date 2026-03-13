@@ -6,6 +6,7 @@ import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
 import { UsersModule } from '../users/users.module.js';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
+import { LocationModule } from '../location/location.module.js';
 import { LocalStrategy } from './strategies/local.strategy.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 
@@ -13,6 +14,7 @@ import { JwtStrategy } from './strategies/jwt.strategy.js';
   imports: [
     UsersModule,
     SubscriptionsModule,
+    LocationModule,
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],

@@ -1,0 +1,110 @@
+meta {
+  name: start dubbing
+  type: http
+  seq: 17
+}
+
+post {
+  url: https://tofu-dubbing-api.dolishco.com/api/dubbing/start
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "sourceLanguage": "auto",
+    "targetLanguage": "th-TH"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+docs {
+  # Start Dubbing Session
+  
+  Initialize a dubbing session before starting playback. Logs the language pair used and checks Pro subscription status.
+  
+  ## Endpoint
+  POST /api/dubbing/start
+  
+  ## Authentication
+  **Required** - Must include Bearer token in Authorization header
+  
+  ## Request Body
+  ```json
+  {
+    "sourceLanguage": "auto",
+    "targetLanguage": "th-TH"
+  }
+  ```
+  
+  - `sourceLanguage`: Source language code or `"auto"` for auto-detection
+  - `targetLanguage`: Target language/voice locale (e.g. `"th-TH"`, `"en-US"`)
+  
+  ## Description
+  Must be called once before each dubbing session starts. Records:
+  - Which language pair the user is dubbing (source → target)
+  - Whether the user is Pro at the time of session start
+  
+  ## Response (201 Created)
+  ```json
+  {
+    "isPro": false
+  }
+  ```
+  
+  - `isPro`: Whether the authenticated user has an active Pro subscription
+  
+  ## Error Responses
+  - **401 Unauthorized**: Missing or invalid token
+  - **400 Bad Request**: Missing or invalid sourceLanguage / targetLanguage
+  
+  ## Use Cases
+  - Called by the extension when user clicks the Dubbing button
+  - Replaces the previous `GET /auth/profile` call for Pro status check
+  - Enables analytics on language pair usage per user
+}
+
+example {
+  name: example
+  
+  request: {
+    url: https://tofu-dubbing-api.dolishco.com/api/dubbing/start
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "sourceLanguage": "auto",
+        "targetLanguage": "th-TH"
+      }
+    }
+  }
+  
+  response: {
+    headers: {
+      access-control-allow-credentials: true
+      access-control-allow-origin: *
+      access-control-expose-headers: *
+      content-type: application/json; charset=utf-8
+      via: 1.1 Caddy
+      x-powered-by: Express
+    }
+  
+    status: {
+      code: 201
+      text: Created
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "isPro": false
+        }
+      '''
+    }
+  }
+}

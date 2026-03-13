@@ -18,7 +18,17 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Request() req: any) {
-    return this.authService.login(req.user);
+    const forwarded = req.headers['x-forwarded-for'];
+    const rawIp = Array.isArray(forwarded)
+      ? forwarded[0]
+      : forwarded?.split(',')[0];
+    const ip = (rawIp ?? req.socket?.remoteAddress ?? '')
+      .replace(/^::ffff:/, '')
+      .trim() || undefined;
+
+    const result = await this.authService.login(req.user);
+    this.authService.logLogin(req.user.id, ip).catch(() => {});
+    return result;
   }
 
   @Post('register')

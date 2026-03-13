@@ -9,6 +9,18 @@ export interface TranslateTextParams {
   model: string;
 }
 
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  cacheWriteTokens: number;
+}
+
+export interface TranslateTextResult {
+  text: string;
+  usage: TokenUsage;
+}
+
 @Injectable()
 export class TranslationService {
   private openai: OpenAI;
@@ -22,7 +34,7 @@ export class TranslationService {
   async translateText(
     params: TranslateTextParams,
     provider: AIProvider,
-  ): Promise<string> {
+  ): Promise<TranslateTextResult> {
     switch (provider) {
       case AIProvider.OPENAI:
         return this.translateWithOpenAI(params);
@@ -33,19 +45,17 @@ export class TranslationService {
 
   private async translateWithOpenAI(
     params: TranslateTextParams,
-  ): Promise<string> {
+  ): Promise<TranslateTextResult> {
     const { text, fromLanguage, toLanguage, model } = params;
 
     const systemPrompt = `You are a professional translator. Translate the given text from ${fromLanguage} to ${toLanguage}. 
 Only return the translated text without any additional explanations, quotes, or formatting.`;
 
-    const userPrompt = text;
-
     const response = await this.openai.chat.completions.create({
       model: model,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
+        { role: 'user', content: text },
       ],
       temperature: 0.3,
     });
@@ -56,6 +66,14 @@ Only return the translated text without any additional explanations, quotes, or 
       throw new Error('No translation received from OpenAI');
     }
 
-    return translatedText;
+    const usage: TokenUsage = {
+      inputTokens: response.usage?.prompt_tokens ?? 0,
+      outputTokens: response.usage?.completion_tokens ?? 0,
+      cachedTokens:
+        (response.usage as any)?.prompt_tokens_details?.cached_tokens ?? 0,
+      cacheWriteTokens: 0,
+    };
+
+    return { text: translatedText, usage };
   }
 }

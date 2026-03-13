@@ -15,6 +15,13 @@
       "when": 1769155933056,
       "tag": "0001_demonic_masked_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773414009700,
+      "tag": "0002_powerful_karen_page",
+      "breakpoints": true
     }
   ]
 }

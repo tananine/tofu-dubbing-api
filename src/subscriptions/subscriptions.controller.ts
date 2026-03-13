@@ -67,6 +67,12 @@ export class SubscriptionsController {
       },
     });
 
+    await this.subscriptionsService.logSubscriptionClick(
+      userId,
+      createCheckoutDto.planInterval,
+      createCheckoutDto.currency ?? 'USD',
+    );
+
     return { url: session.url };
   }
 

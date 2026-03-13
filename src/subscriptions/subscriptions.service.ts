@@ -3,7 +3,11 @@ import { eq, and, gte, desc, inArray } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { DATABASE_CONNECTION } from '../database/database.module.js';
 import * as schema from '../database/schema.js';
-import { subscriptions, NewSubscription } from '../database/schema.js';
+import {
+  subscriptions,
+  NewSubscription,
+  subscriptionClickLogs,
+} from '../database/schema.js';
 
 @Injectable()
 export class SubscriptionsService {
@@ -37,6 +41,7 @@ export class SubscriptionsService {
       .select()
       .from(subscriptions)
       .where(eq(subscriptions.userId, userId))
+      .orderBy(desc(subscriptions.createdAt))
       .limit(1);
     return result[0];
   }
@@ -83,7 +88,9 @@ export class SubscriptionsService {
     currentPeriodEnd: Date;
     cancelAtPeriodEnd?: boolean;
   }) {
-    const existing = await this.findByUserId(data.userId);
+    const existing = await this.findByStripeSubscriptionId(
+      data.stripeSubscriptionId,
+    );
 
     if (existing) {
       await this.db
@@ -151,5 +158,17 @@ export class SubscriptionsService {
         updatedAt: new Date(),
       })
       .where(eq(subscriptions.id, subscriptionId));
+  }
+
+  async logSubscriptionClick(
+    userId: number,
+    planInterval: string,
+    currency: string,
+  ) {
+    await this.db.insert(subscriptionClickLogs).values({
+      userId,
+      planInterval,
+      currency,
+    });
   }
 }
