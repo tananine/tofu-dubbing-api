@@ -7,6 +7,7 @@ import {
   subscriptions,
   NewSubscription,
   subscriptionClickLogs,
+  subscriptionPageViews,
 } from '../database/schema.js';
 
 @Injectable()
@@ -169,6 +170,13 @@ export class SubscriptionsService {
       userId,
       planInterval,
       currency,
+    });
+  }
+
+  async logPageView(userId: number, page: string) {
+    await this.db.insert(subscriptionPageViews).values({
+      userId,
+      page,
     });
   }
 }

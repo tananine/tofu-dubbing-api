@@ -92,6 +92,19 @@ export type SubscriptionClickLog = typeof subscriptionClickLogs.$inferSelect;
 export type NewSubscriptionClickLog =
   typeof subscriptionClickLogs.$inferInsert;
 
+export const subscriptionPageViews = pgTable('subscription_page_views', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id),
+  page: varchar('page', { length: 32 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type SubscriptionPageView = typeof subscriptionPageViews.$inferSelect;
+export type NewSubscriptionPageView =
+  typeof subscriptionPageViews.$inferInsert;
+
 export const loginLogs = pgTable('login_logs', {
   id: serial('id').primaryKey(),
   userId: integer('user_id')

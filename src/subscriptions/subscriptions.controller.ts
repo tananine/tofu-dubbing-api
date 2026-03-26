@@ -12,6 +12,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { SubscriptionsService } from './subscriptions.service.js';
 import { MessageCodes } from '../common/message-codes.js';
 import { CreateCheckoutDto, PlanInterval } from './dto/create-checkout.dto.js';
+import { LogSubscriptionPageViewDto } from './dto/log-subscription-page-view.dto.js';
 import Stripe from 'stripe';
 
 @Controller('subscriptions')
@@ -74,6 +75,17 @@ export class SubscriptionsController {
     );
 
     return { url: session.url };
+  }
+
+  @Post('log-page-view')
+  @UseGuards(JwtAuthGuard)
+  async logPageView(
+    @Request() req: any,
+    @Body() dto: LogSubscriptionPageViewDto,
+  ) {
+    const userId = req.user.id;
+    await this.subscriptionsService.logPageView(userId, dto.page);
+    return { success: true };
   }
 
   @Post('customer-portal')

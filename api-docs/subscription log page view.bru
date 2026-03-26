@@ -1,0 +1,100 @@
+meta {
+  name: subscription log page view
+  type: http
+  seq: 18
+}
+
+post {
+  url: https://tofu-dubbing-api.dolishco.com/api/subscriptions/log-page-view
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "page": "pricing"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+docs {
+  # Log Subscription Page View
+  
+  Records that the authenticated user opened a subscription-related screen in the client (extension). Stored in `subscription_page_views`.
+  
+  ## Endpoint
+  POST /api/subscriptions/log-page-view
+  
+  ## Authentication
+  **Required** - Bearer token (same as other subscription routes)
+  
+  ## Request Body
+  ```json
+  {
+    "page": "pricing"
+  }
+  ```
+  
+  - `page` (required): One of:
+    - `"pricing"` — user opened the pricing / upgrade screen
+    - `"subscription"` — user opened the Pro subscription management screen
+  
+  This is **not** monthly vs yearly; billing interval is tracked elsewhere (e.g. checkout click logs or subscription status).
+  
+  ## Response (200 OK or 201 Created)
+  ```json
+  {
+    "success": true
+  }
+  ```
+  
+  ## Error Responses
+  - **400 Bad Request**: Invalid or missing `page` (must match enum)
+  - **401 Unauthorized**: Missing or invalid token
+  
+  ## Data
+  - Inserts one row into `subscription_page_views` with `user_id`, `page`, `created_at`.
+  
+  ## Use Cases
+  - Analytics: funnel vs `subscription_click_logs` (checkout intent)
+  - Extension calls this when navigating to pricing or subscription views
+}
+
+example {
+  name: example
+  
+  request: {
+    url: https://tofu-dubbing-api.dolishco.com/api/subscriptions/log-page-view
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "page": "subscription"
+      }
+    }
+  }
+  
+  response: {
+    headers: {
+      content-type: application/json; charset=utf-8
+    }
+  
+    status: {
+      code: 201
+      text: Created
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "success": true
+        }
+      '''
+    }
+  }
+}
