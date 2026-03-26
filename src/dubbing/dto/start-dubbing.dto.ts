@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class StartDubbingDto {
   @IsString()
@@ -6,4 +6,9 @@ export class StartDubbingDto {
 
   @IsString()
   targetLanguage!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  pageUrl?: string;
 }

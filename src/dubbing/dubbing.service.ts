@@ -78,6 +78,7 @@ export class DubbingService {
       userId,
       sourceLanguage: dto.sourceLanguage,
       targetLanguage: dto.targetLanguage,
+      pageUrl: dto.pageUrl ?? null,
       isPro,
     });
     return { isPro };

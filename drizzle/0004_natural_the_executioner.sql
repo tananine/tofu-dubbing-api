@@ -1,0 +1,1 @@
+ALTER TABLE "dubbing_logs" ADD COLUMN "page_url" text;

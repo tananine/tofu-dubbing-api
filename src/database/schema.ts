@@ -2,6 +2,7 @@ import {
   pgTable,
   serial,
   varchar,
+  text,
   timestamp,
   integer,
   boolean,
@@ -71,6 +72,7 @@ export const dubbingLogs = pgTable('dubbing_logs', {
     .references(() => users.id),
   sourceLanguage: varchar('source_language', { length: 50 }).notNull(),
   targetLanguage: varchar('target_language', { length: 50 }).notNull(),
+  pageUrl: text('page_url'),
   isPro: boolean('is_pro').notNull().default(false),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

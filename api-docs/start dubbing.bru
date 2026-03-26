@@ -12,8 +12,9 @@ post {
 
 body:json {
   {
-    "sourceLanguage": "auto",
-    "targetLanguage": "th-TH"
+    "sourceLanguage": "auto (en)",
+    "targetLanguage": "th-TH",
+    "pageUrl": "https://www.youtube.com/watch?v=VIDEO_ID"
   }
 }
 
@@ -25,7 +26,7 @@ settings {
 docs {
   # Start Dubbing Session
   
-  Initialize a dubbing session before starting playback. Logs the language pair used and checks Pro subscription status.
+  Initialize a dubbing session before starting playback. Logs the language pair, optional page URL, and checks Pro subscription status. The extension calls this after a caption track is selected so `sourceLanguage` can be `auto (<lang>)` when the user chose auto-detect.
   
   ## Endpoint
   POST /api/dubbing/start
@@ -36,17 +37,20 @@ docs {
   ## Request Body
   ```json
   {
-    "sourceLanguage": "auto",
-    "targetLanguage": "th-TH"
+    "sourceLanguage": "auto (en)",
+    "targetLanguage": "th-TH",
+    "pageUrl": "https://www.youtube.com/watch?v=VIDEO_ID"
   }
   ```
   
-  - `sourceLanguage`: Source language code or `"auto"` for auto-detection
+  - `sourceLanguage`: Fixed source language code, or when the user setting is auto, `auto (<primary>)` where `<primary>` is the BCP 47 primary subtag from the selected caption track (e.g. `auto (en)`, `auto (th)`, `auto (ja)`)
   - `targetLanguage`: Target language/voice locale (e.g. `"th-TH"`, `"en-US"`)
+  - `pageUrl` (optional): Page URL where dubbing was started (e.g. watch URL)
   
   ## Description
-  Must be called once before each dubbing session starts. Records:
+  Must be called once before each dubbing session starts (after subtitles/tracks are resolved). Records:
   - Which language pair the user is dubbing (source → target)
+  - Optional page URL for analytics
   - Whether the user is Pro at the time of session start
   
   ## Response (201 Created)
@@ -63,9 +67,9 @@ docs {
   - **400 Bad Request**: Missing or invalid sourceLanguage / targetLanguage
   
   ## Use Cases
-  - Called by the extension when user clicks the Dubbing button
-  - Replaces the previous `GET /auth/profile` call for Pro status check
-  - Enables analytics on language pair usage per user
+  - Called by the extension after a caption track is chosen for the video
+  - Returns Pro status for the session (also stored in the dubbing log)
+  - Enables analytics on language pair and page URL per user
 }
 
 example {
@@ -77,8 +81,9 @@ example {
     mode: json
     body:json: {
       {
-        "sourceLanguage": "auto",
-        "targetLanguage": "th-TH"
+        "sourceLanguage": "auto (en)",
+        "targetLanguage": "th-TH",
+        "pageUrl": "https://www.youtube.com/watch?v=VIDEO_ID"
       }
     }
   }
