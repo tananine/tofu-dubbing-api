@@ -34,6 +34,7 @@ export interface AudioFile {
   key: string;
   url: string;
   cached: boolean;
+  responseType: 'prx' | 'ip';
   duration?: number;
   tokenUsage?: {
     inputTokens: number;
@@ -225,6 +226,7 @@ export class DubbingService {
       key,
       url: this.storageService.getCdnUrl(key),
       cached: true,
+      responseType: 'ip',
     };
   }
 
@@ -238,6 +240,7 @@ export class DubbingService {
     const maxAttempts = Math.max(1, getProxyRetryCount() + 1);
     let stdout: Buffer | string | undefined;
     let lastError: unknown;
+    let responseType: 'prx' | 'ip' = 'ip';
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const proxyUrl = pickRandomProxy(excludedProxies);
@@ -251,6 +254,7 @@ export class DubbingService {
           },
         );
         stdout = result.stdout;
+        responseType = proxyUrl ? 'prx' : 'ip';
         markProxySuccess(proxyUrl);
         lastError = undefined;
         break;
@@ -282,6 +286,7 @@ export class DubbingService {
       key,
       url: '',
       cached: false,
+      responseType,
       duration,
     };
   }
@@ -388,13 +393,14 @@ export class DubbingService {
   ) {
     const cachedCount = audioFiles.filter((a) => a.cached).length;
     const audioFilesWithUrls = audioFiles.map(
-      ({ index, url, text, start, end, cached, duration }) => ({
+      ({ index, url, text, start, end, cached, responseType, duration }) => ({
         index,
         url,
         text,
         start,
         end,
         cached,
+        responseType,
         duration,
       }),
     );

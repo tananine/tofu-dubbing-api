@@ -130,7 +130,8 @@ docs {
         "text": "Translated text",
         "start": 189.96,
         "end": 202.92,
-        "cached": false
+        "cached": false,
+        "responseType": "prx"
       }
     ]
   }
@@ -144,6 +145,7 @@ docs {
   - `generatedCount`: Number of newly generated audio files
   - `errorCount`: Number of failed generations
   - `audioFiles`: Array of audio file objects with URLs and timing info
+- `audioFiles[].responseType`: Debug source for each generated segment (`"prx"` = proxy, `"ip"` = direct/no proxy)
   
   ## Use Cases
   - Generate dubbing audio for YouTube videos
@@ -235,7 +237,8 @@ example {
               "text": "งานของผมคือการโทรหาลูกค้า แต่ในแต่ละ วัน จะมีคนแปลกหน้าเดินเข้ามาในออฟฟิศประมาณ 30 ครั้ง เคาะประตู และขอ ชมฟิตเนสเพื่อดูว่าการเป็น สมาชิกน่าสนใจหรือไม่  มันคุ้มค่าที่จะสมัครสมาชิก ดังนั้นหน้าที่ ของฉันคือการใช้เสน่ห์ดึงดูดใจ",
               "start": 189.96,
               "end": 202.92,
-              "cached": false
+              "cached": false,
+              "responseType": "prx"
             },
             {
               "index": 13,
@@ -243,7 +246,8 @@ example {
               "text": "ขายตัวเอง ขายสิ่งอำนวยความสะดวกต่างๆ โดย หวังว่าพวกเขาจะสมัคร สมาชิก แต่ตอนที่ฉันเริ่ม งานใหม่ๆ ฉันรู้สึกเขินอายมาก เพราะฉันไม่รู้ว่าจะ แสดงอะไรให้พวกเขาดู หรือแม้แต่จะ พูดอะไรกับพวกเขาในระหว่างการเดินยาวๆ ไปตามทางเดินที่ยาวและเปลี่ยวไปยัง",
               "start": 205.28,
               "end": 220.24,
-              "cached": false
+              "cached": false,
+              "responseType": "ip"
             },
             {
               "index": 14,
@@ -251,7 +255,8 @@ example {
               "text": "ยิม แต่แล้ววันหนึ่งผู้จัดการฝ่ายขายคนหนึ่ง บอกฉันบางอย่างที่ฉันจะไม่มีวัน ลืม เขาบอกว่า ไม่ว่าใครจะเดินเข้ามาใน ประตูนั้น ไม่ว่าจะเป็น เด็กอายุ 17 ปีที่ใส่ชุดสเก็ตบอร์ด หรือผู้หญิงอายุ 57 ปีที่แต่งตัวราวกับกำลังจะไป เดท คุณสามารถหาหนึ่งสิ่งในตัว",
               "start": 222.4,
               "end": 242.88,
-              "cached": false
+              "cached": false,
+              "responseType": "prx"
             }
           ]
         }
