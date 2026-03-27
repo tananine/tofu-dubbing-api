@@ -2,6 +2,8 @@
 import asyncio
 import json
 import edge_tts
+import sys
+from typing import Optional
 
 
 def get_country_flag(locale: str) -> str:
@@ -21,8 +23,8 @@ def get_country_flag(locale: str) -> str:
     return flag
 
 
-async def list_voices() -> list[dict]:
-    voices = await edge_tts.list_voices()
+async def list_voices(proxy: Optional[str]) -> list[dict]:
+    voices = await edge_tts.list_voices(proxy=proxy)
     return [
         {
             "id": voice.get("ShortName"),
@@ -36,7 +38,8 @@ async def list_voices() -> list[dict]:
 
 
 def main() -> None:
-    voices = asyncio.run(list_voices())
+    proxy = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] else None
+    voices = asyncio.run(list_voices(proxy))
     print(json.dumps(voices))
 
 

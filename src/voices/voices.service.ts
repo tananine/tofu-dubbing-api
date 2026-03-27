@@ -1,8 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
+import {
+  getProxyRetryCount,
+  markProxyFailure,
+  markProxySuccess,
+  pickRandomProxy,
+} from '../common/proxy-pool.js';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class VoicesService {
@@ -19,12 +25,29 @@ export class VoicesService {
   }
 
   async getEdgeTtsVoices() {
-    const { stdout } = await execAsync(
-      `python3 ${this.EDGE_TTS_LIST_SCRIPT}`,
-      {
-        maxBuffer: this.MAX_BUFFER_SIZE,
-      },
-    );
-    return JSON.parse(stdout);
+    const excludedProxies = new Set<string>();
+    const maxAttempts = Math.max(1, getProxyRetryCount() + 1);
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const proxyUrl = pickRandomProxy(excludedProxies);
+      try {
+        const { stdout } = await execFileAsync(
+          'python3',
+          [this.EDGE_TTS_LIST_SCRIPT, proxyUrl],
+          {
+            maxBuffer: this.MAX_BUFFER_SIZE,
+          },
+        );
+        markProxySuccess(proxyUrl);
+        return JSON.parse(stdout);
+      } catch (error) {
+        markProxyFailure(proxyUrl);
+        if (proxyUrl) excludedProxies.add(proxyUrl);
+        lastError = error;
+      }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error('Failed to list voices');
   }
 }

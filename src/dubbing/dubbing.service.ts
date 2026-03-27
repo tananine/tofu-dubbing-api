@@ -16,6 +16,12 @@ import { UsageLogsService } from '../users/usage-logs.service.js';
 import { DATABASE_CONNECTION } from '../database/database.module.js';
 import * as schema from '../database/schema.js';
 import { dubbingLogs, aiModelUsage } from '../database/schema.js';
+import {
+  getProxyRetryCount,
+  markProxyFailure,
+  markProxySuccess,
+  pickRandomProxy,
+} from '../common/proxy-pool.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -228,15 +234,36 @@ export class DubbingService {
     key: string,
   ): Promise<AudioFile> {
     let cleanedText = subtitle.targetText;
+    const excludedProxies = new Set<string>();
+    const maxAttempts = Math.max(1, getProxyRetryCount() + 1);
+    let stdout: Buffer | string | undefined;
+    let lastError: unknown;
 
-    const { stdout } = await execFileAsync(
-      'python3',
-      [this.SCRIPT_PATH, cleanedText, config.voice],
-      {
-        encoding: 'buffer',
-        maxBuffer: this.MAX_BUFFER_SIZE,
-      },
-    );
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const proxyUrl = pickRandomProxy(excludedProxies);
+      try {
+        const result = await execFileAsync(
+          'python3',
+          [this.SCRIPT_PATH, cleanedText, config.voice, proxyUrl],
+          {
+            encoding: 'buffer',
+            maxBuffer: this.MAX_BUFFER_SIZE,
+          },
+        );
+        stdout = result.stdout;
+        markProxySuccess(proxyUrl);
+        lastError = undefined;
+        break;
+      } catch (error) {
+        markProxyFailure(proxyUrl);
+        if (proxyUrl) excludedProxies.add(proxyUrl);
+        lastError = error;
+      }
+    }
+
+    if (!stdout) {
+      throw lastError instanceof Error ? lastError : new Error('TTS generation failed');
+    }
 
     let duration = 0;
     try {
