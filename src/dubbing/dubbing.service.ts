@@ -243,7 +243,7 @@ export class DubbingService {
     let responseType: 'prx' | 'ip' = 'ip';
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const proxyUrl = pickRandomProxy(excludedProxies);
+      const proxyUrl = pickRandomProxy(excludedProxies, 'generate-voice');
       try {
         const result = await execFileAsync(
           'python3',

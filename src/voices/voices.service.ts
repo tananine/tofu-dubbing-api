@@ -30,7 +30,7 @@ export class VoicesService {
     let lastError: unknown;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const proxyUrl = pickRandomProxy(excludedProxies);
+      const proxyUrl = pickRandomProxy(excludedProxies, 'voices-list');
       try {
         const { stdout } = await execFileAsync(
           'python3',

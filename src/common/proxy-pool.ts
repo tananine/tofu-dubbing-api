@@ -6,13 +6,19 @@ type ProxyHealth = {
 const proxyHealthMap = new Map<string, ProxyHealth>();
 const DEFAULT_COOLDOWN_MS = 5 * 60 * 1000;
 
-function isProxyEnabled(): boolean {
-  const raw = (process.env.PROXY_ENABLED ?? 'true').trim().toLowerCase();
+export type ProxyUsageContext = 'generate-voice' | 'voices-list';
+
+function isProxyEnabled(context: ProxyUsageContext): boolean {
+  const envName =
+    context === 'generate-voice'
+      ? 'PROXY_GENERATE_VOICE_ENABLED'
+      : 'PROXY_VOICES_LIST_ENABLED';
+  const raw = (process.env[envName] ?? 'true').trim().toLowerCase();
   return !['false', '0', 'no', 'off'].includes(raw);
 }
 
-function parseProxyUrlsFromEnv(): string[] {
-  if (!isProxyEnabled()) return [];
+function parseProxyUrlsFromEnv(context: ProxyUsageContext): string[] {
+  if (!isProxyEnabled(context)) return [];
 
   const pooled = process.env.WEBSHARE_PROXY_URLS;
 
@@ -36,8 +42,11 @@ export function getProxyRetryCount(): number {
   return Math.floor(raw);
 }
 
-export function pickRandomProxy(excluded = new Set<string>()): string {
-  const urls = parseProxyUrlsFromEnv();
+export function pickRandomProxy(
+  excluded = new Set<string>(),
+  context: ProxyUsageContext,
+): string {
+  const urls = parseProxyUrlsFromEnv(context);
   if (urls.length === 0) return '';
 
   const now = Date.now();
