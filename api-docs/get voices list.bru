@@ -49,6 +49,7 @@ docs {
   ```json
   {
     "voiceType": "edge-tts",
+    "responseType": "prx",
     "voices": [
       {
         "id": "th-TH-NiwatNeural",
@@ -70,6 +71,7 @@ docs {
   - `language`: Language code (ISO format, e.g., "th-TH", "en-US")
   - `gender`: Voice gender ("Male" or "Female")
   - `name`: Full descriptive name of the voice
+  - `responseType`: Debug source for this request (`"prx"` = proxy, `"ip"` = direct/no proxy)
   
   ## Error Responses
   - **400 Bad Request**: `voiceType` is required or invalid
@@ -119,6 +121,7 @@ example {
       content: '''
         {
           "voiceType": "edge-tts",
+          "responseType": "prx",
           "voices": [
             {
               "id": "af-ZA-AdriNeural",

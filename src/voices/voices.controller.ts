@@ -22,7 +22,7 @@ export class VoicesController {
       throw new BadRequestException('voiceType is required');
     }
 
-    const voices = await this.voicesService.getVoicesByType(voiceType);
-    return { voiceType, voices };
+    const result = await this.voicesService.getVoicesByType(voiceType);
+    return { voiceType, ...result };
   }
 }

@@ -40,7 +40,10 @@ export class VoicesService {
           },
         );
         markProxySuccess(proxyUrl);
-        return JSON.parse(stdout);
+        return {
+          voices: JSON.parse(stdout),
+          responseType: proxyUrl ? 'prx' : 'ip',
+        };
       } catch (error) {
         markProxyFailure(proxyUrl);
         if (proxyUrl) excludedProxies.add(proxyUrl);
