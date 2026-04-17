@@ -3,6 +3,7 @@ import {
   Post,
   Headers,
   BadRequestException,
+  InternalServerErrorException,
   Req,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
@@ -58,6 +59,7 @@ export class StripeWebhookController {
     try {
       await this.processWebhookEvent(event);
     } catch (error) {
+      throw new InternalServerErrorException(MessageCodes.UNKNOWN_ERROR);
     }
 
     return { received: true };
@@ -194,7 +196,7 @@ export class StripeWebhookController {
   private async handleInvoicePaymentSucceeded(
     invoice: StripeInvoiceExtended,
   ): Promise<void> {
-    const subscriptionId = this.extractSubscriptionId(invoice.subscription);
+    const subscriptionId = this.extractSubscriptionIdFromInvoice(invoice);
     if (!subscriptionId) {
       return;
     }
@@ -234,7 +236,7 @@ export class StripeWebhookController {
   private async handleInvoicePaymentFailed(
     invoice: StripeInvoiceExtended,
   ): Promise<void> {
-    const subscriptionId = this.extractSubscriptionId(invoice.subscription);
+    const subscriptionId = this.extractSubscriptionIdFromInvoice(invoice);
     if (!subscriptionId) {
       return;
     }
@@ -314,6 +316,31 @@ export class StripeWebhookController {
     }
 
     return subscription.id;
+  }
+
+  private extractSubscriptionIdFromInvoice(
+    invoice: StripeInvoiceExtended,
+  ): string | undefined {
+    const directSubscriptionId = this.extractSubscriptionId(invoice.subscription);
+    if (directSubscriptionId) {
+      return directSubscriptionId;
+    }
+
+    const invoiceAsAny = invoice as any;
+    const parentSubscriptionId =
+      invoiceAsAny?.parent?.subscription_details?.subscription;
+    if (typeof parentSubscriptionId === 'string') {
+      return parentSubscriptionId;
+    }
+
+    const lineSubscriptionId =
+      invoiceAsAny?.lines?.data?.[0]?.parent?.subscription_item_details
+        ?.subscription;
+    if (typeof lineSubscriptionId === 'string') {
+      return lineSubscriptionId;
+    }
+
+    return undefined;
   }
 
   private extractPeriodFromSubscription(data: ExtractedSubscriptionData):

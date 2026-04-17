@@ -142,13 +142,20 @@ export class SubscriptionsService {
       cancelAtPeriodEnd: boolean;
     }>,
   ) {
-    await this.db
+    const result = await this.db
       .update(subscriptions)
       .set({
         ...data,
         updatedAt: new Date(),
       })
-      .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId));
+      .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId))
+      .returning({ id: subscriptions.id });
+
+    if (result.length === 0) {
+      throw new Error(
+        `Subscription not found for stripeSubscriptionId=${stripeSubscriptionId}`,
+      );
+    }
   }
 
   async updateCancelAtPeriodEnd(subscriptionId: number, cancel: boolean) {
