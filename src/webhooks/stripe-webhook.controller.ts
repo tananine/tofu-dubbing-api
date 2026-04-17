@@ -194,15 +194,27 @@ export class StripeWebhookController {
   private async handleInvoicePaymentSucceeded(
     invoice: StripeInvoiceExtended,
   ): Promise<void> {
-    const subscriptionId = invoice.subscription;
-    if (!subscriptionId || typeof subscriptionId !== 'string') {
+    const subscriptionId = this.extractSubscriptionId(invoice.subscription);
+    if (!subscriptionId) {
       return;
     }
 
     const stripeSubscription = await this.retrieveSubscription(subscriptionId);
     const subscriptionData = this.extractSubscriptionData(stripeSubscription);
+    const period =
+      this.extractPeriodFromSubscription(subscriptionData) ??
+      this.extractPeriodFromInvoice(invoice);
 
-    if (!this.validateSubscriptionPeriod(subscriptionData)) {
+    if (!period) {
+      await this.subscriptionsService.updateByStripeSubscriptionId(
+        subscriptionId,
+        {
+          status: subscriptionData.status,
+          stripePriceId: subscriptionData.priceId,
+          planInterval: subscriptionData.planInterval,
+          cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd,
+        },
+      );
       return;
     }
 
@@ -212,8 +224,9 @@ export class StripeWebhookController {
         status: subscriptionData.status,
         stripePriceId: subscriptionData.priceId,
         planInterval: subscriptionData.planInterval,
-        currentPeriodStart: new Date(subscriptionData.currentPeriodStart * 1000),
-        currentPeriodEnd: new Date(subscriptionData.currentPeriodEnd * 1000),
+        currentPeriodStart: period.currentPeriodStart,
+        currentPeriodEnd: period.currentPeriodEnd,
+        cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd,
       },
     );
   }
@@ -221,8 +234,8 @@ export class StripeWebhookController {
   private async handleInvoicePaymentFailed(
     invoice: StripeInvoiceExtended,
   ): Promise<void> {
-    const subscriptionId = invoice.subscription;
-    if (!subscriptionId || typeof subscriptionId !== 'string') {
+    const subscriptionId = this.extractSubscriptionId(invoice.subscription);
+    if (!subscriptionId) {
       return;
     }
 
@@ -287,5 +300,49 @@ export class StripeWebhookController {
     }
 
     return interval;
+  }
+
+  private extractSubscriptionId(
+    subscription: string | Stripe.Subscription | undefined,
+  ): string | undefined {
+    if (!subscription) {
+      return undefined;
+    }
+
+    if (typeof subscription === 'string') {
+      return subscription;
+    }
+
+    return subscription.id;
+  }
+
+  private extractPeriodFromSubscription(data: ExtractedSubscriptionData):
+    | { currentPeriodStart: Date; currentPeriodEnd: Date }
+    | undefined {
+    if (!this.validateSubscriptionPeriod(data)) {
+      return undefined;
+    }
+
+    return {
+      currentPeriodStart: new Date(data.currentPeriodStart * 1000),
+      currentPeriodEnd: new Date(data.currentPeriodEnd * 1000),
+    };
+  }
+
+  private extractPeriodFromInvoice(invoice: StripeInvoiceExtended):
+    | { currentPeriodStart: Date; currentPeriodEnd: Date }
+    | undefined {
+    const firstLine = invoice.lines?.data?.[0];
+    const linePeriodStart = firstLine?.period?.start;
+    const linePeriodEnd = firstLine?.period?.end;
+
+    if (!linePeriodStart || !linePeriodEnd) {
+      return undefined;
+    }
+
+    return {
+      currentPeriodStart: new Date(linePeriodStart * 1000),
+      currentPeriodEnd: new Date(linePeriodEnd * 1000),
+    };
   }
 }
