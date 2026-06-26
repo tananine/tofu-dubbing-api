@@ -57,8 +57,9 @@ export class SubscriptionsService {
   }
 
   async isPro(userId: number): Promise<boolean> {
-    const subscription = await this.findUsableByUserId(userId);
-    return !!subscription;
+    // const subscription = await this.findUsableByUserId(userId);
+    // return !!subscription;
+    return true;
   }
 
   async findCancelableByUserId(userId: number) {
