@@ -26,9 +26,8 @@ export class StripeWebhookController {
     private subscriptionsService: SubscriptionsService,
     private configService: ConfigService,
   ) {
-    this.stripe = new Stripe(
-      this.configService.get<string>('STRIPE_SECRET_KEY')!,
-    );
+    const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+    this.stripe = new Stripe(stripeKey || 'dummy_key');
   }
 
   @Post('stripe')
@@ -36,6 +35,8 @@ export class StripeWebhookController {
     @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') signature: string,
   ) {
+    throw new BadRequestException('Stripe integration is currently disabled');
+
     const webhookSecret = this.configService.get<string>(
       'STRIPE_WEBHOOK_SECRET',
     );
@@ -50,7 +51,7 @@ export class StripeWebhookController {
       event = this.stripe.webhooks.constructEvent(
         req.rawBody!,
         signature,
-        webhookSecret,
+        webhookSecret!,
       );
     } catch (err) {
       throw new BadRequestException(MessageCodes.INVALID_SIGNATURE);

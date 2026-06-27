@@ -24,9 +24,8 @@ export class SubscriptionsController {
     private subscriptionsService: SubscriptionsService,
     private configService: ConfigService,
   ) {
-    this.stripe = new Stripe(
-      this.configService.get<string>('STRIPE_SECRET_KEY')!,
-    );
+    const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+    this.stripe = new Stripe(stripeKey || 'dummy_key');
   }
 
   @Post('create-checkout-session')
@@ -35,6 +34,7 @@ export class SubscriptionsController {
     @Request() req: any,
     @Body() createCheckoutDto: CreateCheckoutDto,
   ) {
+    throw new BadRequestException('Stripe integration is currently disabled');
     const userId = req.user.id;
     const userEmail = req.user.email;
 
@@ -91,6 +91,7 @@ export class SubscriptionsController {
   @Post('customer-portal')
   @UseGuards(JwtAuthGuard)
   async createPortalSession(@Request() req: any) {
+    throw new BadRequestException('Stripe integration is currently disabled');
     const userId = req.user.id;
     const subscription =
       await this.subscriptionsService.findActiveByUserId(userId);
@@ -122,8 +123,8 @@ export class SubscriptionsController {
     }
 
     const session = await this.stripe.billingPortal.sessions.create({
-      customer: subscription.stripeCustomerId,
-      configuration: this.portalConfigId,
+      customer: subscription.stripeCustomerId!,
+      configuration: this.portalConfigId!,
     });
 
     return { url: session.url };
@@ -162,6 +163,7 @@ export class SubscriptionsController {
   @Post('cancel')
   @UseGuards(JwtAuthGuard)
   async cancelSubscription(@Request() req: any) {
+    throw new BadRequestException('Stripe integration is currently disabled');
     const userId = req.user.id;
     const subscription =
       await this.subscriptionsService.findActiveByUserId(userId);
@@ -176,7 +178,7 @@ export class SubscriptionsController {
       );
     }
 
-    await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+    await this.stripe.subscriptions.update(subscription.stripeSubscriptionId!, {
       cancel_at_period_end: true,
     });
 
@@ -191,6 +193,7 @@ export class SubscriptionsController {
   @Post('reactivate')
   @UseGuards(JwtAuthGuard)
   async reactivateSubscription(@Request() req: any) {
+    throw new BadRequestException('Stripe integration is currently disabled');
     const userId = req.user.id;
     const subscription =
       await this.subscriptionsService.findCancelableByUserId(userId);
@@ -199,7 +202,7 @@ export class SubscriptionsController {
       throw new BadRequestException(MessageCodes.NO_CANCELLABLE_SUBSCRIPTION);
     }
 
-    await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+    await this.stripe.subscriptions.update(subscription.stripeSubscriptionId!, {
       cancel_at_period_end: false,
     });
 
