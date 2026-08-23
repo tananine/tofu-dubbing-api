@@ -74,6 +74,14 @@ export const dubbingLogs = pgTable('dubbing_logs', {
   targetLanguage: varchar('target_language', { length: 50 }).notNull(),
   pageUrl: text('page_url'),
   isPro: boolean('is_pro').notNull().default(false),
+  model: varchar('model', { length: 100 }),
+  usedAi: boolean('used_ai').notNull().default(false),
+  aiInputTokens: integer('ai_input_tokens').notNull().default(0),
+  aiOutputTokens: integer('ai_output_tokens').notNull().default(0),
+  aiCachedTokens: integer('ai_cached_tokens').notNull().default(0),
+  aiCacheWriteTokens: integer('ai_cache_write_tokens').notNull().default(0),
+  audioDuration: real('audio_duration').notNull().default(0),
+  completedAt: timestamp('completed_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -125,7 +133,6 @@ export const aiModelUsage = pgTable(
   {
     id: serial('id').primaryKey(),
     subscriptionId: integer('subscription_id')
-      .notNull()
       .references(() => subscriptions.id),
     userId: integer('user_id')
       .notNull()
@@ -141,8 +148,8 @@ export const aiModelUsage = pgTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex('ai_model_usage_subscription_period_model_unique').on(
-      table.subscriptionId,
+    uniqueIndex('ai_model_usage_user_period_model_unique').on(
+      table.userId,
       table.periodStart,
       table.model,
     ),

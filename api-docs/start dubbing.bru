@@ -56,10 +56,12 @@ docs {
   ## Response (201 Created)
   ```json
   {
+    "dubbingLogId": 123,
     "isPro": false
   }
   ```
   
+  - `dubbingLogId`: Session ID that must be included in every `/dubbing/generate` request
   - `isPro`: Whether the authenticated user has an active Pro subscription
   
   ## Error Responses
@@ -107,6 +109,7 @@ example {
       type: json
       content: '''
         {
+          "dubbingLogId": 123,
           "isPro": false
         }
       '''

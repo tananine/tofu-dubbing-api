@@ -1,9 +1,14 @@
-import { Injectable, ForbiddenException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  Inject,
+  NotFoundException,
+} from '@nestjs/common';
 import { createHash } from 'crypto';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { parseBuffer } from 'music-metadata';
-import { sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { GenerateDubbingDto } from './dto/generate-dubbing.dto.js';
 import { StartDubbingDto } from './dto/start-dubbing.dto.js';
@@ -79,23 +84,41 @@ export class DubbingService {
   async startSession(
     dto: StartDubbingDto,
     userId: number,
-  ): Promise<{ isPro: boolean }> {
+  ): Promise<{ dubbingLogId: number; isPro: boolean }> {
     const isPro = await this.subscriptionsService.isPro(userId);
-    await this.db.insert(dubbingLogs).values({
-      userId,
-      sourceLanguage: dto.sourceLanguage,
-      targetLanguage: dto.targetLanguage,
-      pageUrl: dto.pageUrl ?? null,
-      isPro,
-    });
-    return { isPro };
+    const [log] = await this.db
+      .insert(dubbingLogs)
+      .values({
+        userId,
+        sourceLanguage: dto.sourceLanguage,
+        targetLanguage: dto.targetLanguage,
+        pageUrl: dto.pageUrl ?? null,
+        isPro,
+      })
+      .returning({ id: dubbingLogs.id });
+    return { dubbingLogId: log.id, isPro };
   }
 
   async generateDubbing(
     generateDubbingDto: GenerateDubbingDto,
     userId: number,
   ) {
-    const { subtitles, config, videoDetails } = generateDubbingDto;
+    const { dubbingLogId, subtitles, config, videoDetails } =
+      generateDubbingDto;
+
+    const [dubbingLog] = await this.db
+      .select({ id: dubbingLogs.id })
+      .from(dubbingLogs)
+      .where(
+        and(
+          eq(dubbingLogs.id, dubbingLogId),
+          eq(dubbingLogs.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (!dubbingLog) {
+      throw new NotFoundException('dubbingLogNotFound');
+    }
 
     if (config.model && isAIModel(config.model)) {
       const isPro = await this.subscriptionsService.isPro(userId);
@@ -117,7 +140,12 @@ export class DubbingService {
 
     await this.uploadGeneratedAudioFiles(audioFiles);
 
-    await this.trackAudioDuration(audioFiles, userId, config.model);
+    await this.trackAudioDuration(
+      audioFiles,
+      userId,
+      dubbingLogId,
+      config.model,
+    );
 
     return this.buildResponse(audioFiles, errors, videoDetails.videoId);
   }
@@ -192,7 +220,7 @@ export class DubbingService {
     const fileExists = await this.storageService.fileExists(key);
 
     if (fileExists) {
-      return this.createCachedAudioFile(normalizedSubtitle, key);
+      return this.createCachedAudioFile(normalizedSubtitle, key, tokenUsage);
     }
 
     const audioFile = await this.generateNewAudioFile(
@@ -216,7 +244,11 @@ export class DubbingService {
     return `youtube/${videoDetails.videoId}/${config.toLanguage}/${config.voice}/tts-${subtitle.index}-${subtitle.start}-${subtitle.end}-${textHash}.mp3`;
   }
 
-  private createCachedAudioFile(subtitle: any, key: string): AudioFile {
+  private createCachedAudioFile(
+    subtitle: any,
+    key: string,
+    tokenUsage?: AudioFile['tokenUsage'],
+  ): AudioFile {
     return {
       index: subtitle.index,
       buffer: null,
@@ -227,6 +259,7 @@ export class DubbingService {
       url: this.storageService.getCdnUrl(key),
       cached: true,
       responseType: 'ip',
+      tokenUsage,
     };
   }
 
@@ -266,7 +299,9 @@ export class DubbingService {
     }
 
     if (!stdout) {
-      throw lastError instanceof Error ? lastError : new Error('TTS generation failed');
+      throw lastError instanceof Error
+        ? lastError
+        : new Error('TTS generation failed');
     }
 
     let duration = 0;
@@ -317,6 +352,7 @@ export class DubbingService {
   private async trackAudioDuration(
     audioFiles: AudioFile[],
     userId: number,
+    dubbingLogId: number,
     model?: string,
   ): Promise<void> {
     const newAudioFiles = audioFiles.filter((a) => !a.cached);
@@ -333,36 +369,58 @@ export class DubbingService {
       );
     }
 
-    if (!model || !isAIModel(model)) return;
-
-    const subscription =
-      await this.subscriptionsService.findActiveByUserId(userId);
-    if (!subscription) return;
-
-    const totalInputTokens = newAudioFiles.reduce(
+    const totalInputTokens = audioFiles.reduce(
       (sum, a) => sum + (a.tokenUsage?.inputTokens ?? 0),
       0,
     );
-    const totalOutputTokens = newAudioFiles.reduce(
+    const totalOutputTokens = audioFiles.reduce(
       (sum, a) => sum + (a.tokenUsage?.outputTokens ?? 0),
       0,
     );
-    const totalCachedTokens = newAudioFiles.reduce(
+    const totalCachedTokens = audioFiles.reduce(
       (sum, a) => sum + (a.tokenUsage?.cachedTokens ?? 0),
       0,
     );
-    const totalCacheWriteTokens = newAudioFiles.reduce(
+    const totalCacheWriteTokens = audioFiles.reduce(
       (sum, a) => sum + (a.tokenUsage?.cacheWriteTokens ?? 0),
       0,
     );
+    const usedAi = Boolean(model && isAIModel(model));
+
+    await this.db
+      .update(dubbingLogs)
+      .set({
+        model: usedAi ? model : dubbingLogs.model,
+        usedAi: usedAi ? true : dubbingLogs.usedAi,
+        aiInputTokens: sql`${dubbingLogs.aiInputTokens} + ${totalInputTokens}`,
+        aiOutputTokens: sql`${dubbingLogs.aiOutputTokens} + ${totalOutputTokens}`,
+        aiCachedTokens: sql`${dubbingLogs.aiCachedTokens} + ${totalCachedTokens}`,
+        aiCacheWriteTokens: sql`${dubbingLogs.aiCacheWriteTokens} + ${totalCacheWriteTokens}`,
+        audioDuration: sql`${dubbingLogs.audioDuration} + ${totalDuration}`,
+        completedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(dubbingLogs.id, dubbingLogId),
+          eq(dubbingLogs.userId, userId),
+        ),
+      );
+
+    if (!usedAi || !model) return;
+
+    const subscription =
+      await this.subscriptionsService.findActiveByUserId(userId);
+    const periodStart =
+      subscription?.currentPeriodStart ??
+      new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
     await this.db
       .insert(aiModelUsage)
       .values({
-        subscriptionId: subscription.id,
+        subscriptionId: subscription?.id ?? null,
         userId,
         model,
-        periodStart: subscription.currentPeriodStart,
+        periodStart,
         totalDuration,
         inputTokens: totalInputTokens,
         outputTokens: totalOutputTokens,
@@ -371,7 +429,7 @@ export class DubbingService {
       })
       .onConflictDoUpdate({
         target: [
-          aiModelUsage.subscriptionId,
+          aiModelUsage.userId,
           aiModelUsage.periodStart,
           aiModelUsage.model,
         ],

@@ -12,6 +12,7 @@ post {
 
 body:json {
   {
+    "dubbingLogId": 123,
     "subtitles": [
       {
         "sourceText": "my job to cold call people but also around 30 times throughout the day strangers would walk into the office knock on the door and ask to be given a tour around the gym to see if the membership was worth signing up for so it was my job to turn on the Charisma",
@@ -63,11 +64,12 @@ docs {
   POST /api/dubbing/generate
   
   ## Authentication
-  Currently not required (commented out in code)
+  **Required** - Must include Bearer token in Authorization header
   
   ## Request Body
   ```json
   {
+    "dubbingLogId": 123,
     "subtitles": [
       {
         "sourceText": "Original text",
@@ -90,6 +92,8 @@ docs {
     }
   }
   ```
+
+  - `dubbingLogId`: ID returned by `/api/dubbing/start`; must belong to the authenticated user
   
   ### Subtitle Item Fields
   - `sourceText`: Original subtitle text
@@ -162,6 +166,7 @@ example {
     mode: json
     body:json: {
       {
+        "dubbingLogId": 123,
         "subtitles": [
           {
             "sourceText": "my job to cold call people but also around 30 times throughout the day strangers would walk into the office knock on the door and ask to be given a tour around the gym to see if the membership was worth signing up for so it was my job to turn on the Charisma",

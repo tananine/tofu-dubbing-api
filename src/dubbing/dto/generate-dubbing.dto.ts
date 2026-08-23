@@ -1,4 +1,12 @@
-import { IsArray, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  Min,
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class SubtitleItemDto {
@@ -45,6 +53,10 @@ class VideoDetailsDto {
 }
 
 export class GenerateDubbingDto {
+  @IsInt()
+  @Min(1)
+  dubbingLogId!: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SubtitleItemDto)
