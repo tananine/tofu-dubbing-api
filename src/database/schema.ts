@@ -82,6 +82,7 @@ export const dubbingLogs = pgTable('dubbing_logs', {
   aiCacheWriteTokens: integer('ai_cache_write_tokens').notNull().default(0),
   audioDuration: real('audio_duration').notNull().default(0),
   completedAt: timestamp('completed_at'),
+  errorMessage: text('error_message'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

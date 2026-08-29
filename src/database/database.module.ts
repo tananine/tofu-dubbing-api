@@ -14,7 +14,7 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const connectionString = configService.get<string>('DATABASE_URL');
-        const client = postgres(connectionString!);
+        const client = postgres(connectionString!, { max: 12 });
         return drizzle(client, { schema });
       },
     },

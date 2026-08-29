@@ -1,15 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
+import { PassThrough } from 'stream';
 
-interface UploadFileInput {
-  buffer: Buffer;
-  key: string;
-}
-
-interface UploadedFile {
-  key: string;
-  url: string;
+export interface StreamUpload {
+  stream: PassThrough;
+  done: Promise<string>;
+  abort: () => Promise<void>;
 }
 
 @Injectable()
@@ -54,26 +52,25 @@ export class StorageService {
     }
   }
 
-  async uploadBuffer(buffer: Buffer, key: string): Promise<string> {
-    const command = new PutObjectCommand({
-      Bucket: this.bucketName,
-      Key: key,
-      Body: buffer,
-      ACL: 'public-read',
-      ContentType: 'audio/mpeg',
+  createStreamUpload(key: string): StreamUpload {
+    const stream = new PassThrough();
+    const upload = new Upload({
+      client: this.s3Client,
+      params: {
+        Bucket: this.bucketName,
+        Key: key,
+        Body: stream,
+        ACL: 'public-read',
+        ContentType: 'audio/mpeg',
+      },
     });
 
-    await this.s3Client.send(command);
+    const done = upload.done().then(() => this.getCdnUrl(key));
 
-    return this.getCdnUrl(key);
-  }
-
-  async uploadBuffers(files: UploadFileInput[]): Promise<UploadedFile[]> {
-    const uploadPromises = files.map(async ({ buffer, key }) => {
-      const url = await this.uploadBuffer(buffer, key);
-      return { key, url };
-    });
-
-    return Promise.all(uploadPromises);
+    return {
+      stream,
+      done,
+      abort: () => upload.abort().catch(() => undefined),
+    };
   }
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "dubbing_logs" ADD COLUMN "error_message" text;

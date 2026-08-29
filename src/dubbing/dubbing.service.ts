@@ -2,12 +2,13 @@ import {
   Injectable,
   ForbiddenException,
   Inject,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { createHash } from 'crypto';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import { parseBuffer } from 'music-metadata';
+import { spawn } from 'child_process';
+import { PassThrough } from 'stream';
+import { parseStream } from 'music-metadata';
 import { and, eq, sql } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { GenerateDubbingDto } from './dto/generate-dubbing.dto.js';
@@ -27,8 +28,6 @@ import {
   markProxySuccess,
   pickRandomProxy,
 } from '../common/proxy-pool.js';
-
-const execFileAsync = promisify(execFile);
 
 export interface AudioFile {
   index: number;
@@ -56,8 +55,8 @@ export interface AudioError {
 
 @Injectable()
 export class DubbingService {
+  private readonly logger = new Logger(DubbingService.name);
   private readonly CONCURRENT_LIMIT = 5;
-  private readonly MAX_BUFFER_SIZE = 10 * 1024 * 1024;
   private readonly SCRIPT_PATH = 'scripts/edge-tts-generate.py';
 
   constructor(
@@ -130,24 +129,40 @@ export class DubbingService {
     const audioFiles: AudioFile[] = [];
     const errors: AudioError[] = [];
 
-    await this.processSubtitlesInBatches(
-      subtitles,
-      config,
-      videoDetails,
-      audioFiles,
-      errors,
-    );
+    try {
+      await this.processSubtitlesInBatches(
+        subtitles,
+        config,
+        videoDetails,
+        audioFiles,
+        errors,
+      );
 
-    await this.uploadGeneratedAudioFiles(audioFiles);
+      await this.trackAudioDuration(
+        audioFiles,
+        userId,
+        dubbingLogId,
+        config.model,
+      );
 
-    await this.trackAudioDuration(
-      audioFiles,
-      userId,
-      dubbingLogId,
-      config.model,
-    );
-
-    return this.buildResponse(audioFiles, errors, videoDetails.videoId);
+      return this.buildResponse(audioFiles, errors, videoDetails.videoId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `dubbingLogId=${dubbingLogId} userId=${userId} failed: ${message}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      await this.db
+        .update(dubbingLogs)
+        .set({ errorMessage: message.slice(0, 2000) })
+        .where(
+          and(
+            eq(dubbingLogs.id, dubbingLogId),
+            eq(dubbingLogs.userId, userId),
+          ),
+        );
+      throw error;
+    }
   }
 
   private async processSubtitlesInBatches(
@@ -212,7 +227,13 @@ export class DubbingService {
           );
           normalizedSubtitle.targetText = result.text;
           tokenUsage = result.usage;
-        } catch (error) {}
+        } catch (error) {
+          this.logger.warn(
+            `AI translation failed, falling back to sourceText: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
       }
     }
 
@@ -268,29 +289,33 @@ export class DubbingService {
     config: any,
     key: string,
   ): Promise<AudioFile> {
-    let cleanedText = subtitle.targetText;
+    const cleanedText = subtitle.targetText;
     const excludedProxies = new Set<string>();
     const maxAttempts = Math.max(1, getProxyRetryCount() + 1);
-    let stdout: Buffer | string | undefined;
     let lastError: unknown;
-    let responseType: 'prx' | 'ip' = 'ip';
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const proxyUrl = pickRandomProxy(excludedProxies, 'generate-voice');
       try {
-        const result = await execFileAsync(
-          'python3',
-          [this.SCRIPT_PATH, cleanedText, config.voice, proxyUrl],
-          {
-            encoding: 'buffer',
-            maxBuffer: this.MAX_BUFFER_SIZE,
-          },
+        const { url, duration } = await this.streamTtsToStorage(
+          cleanedText,
+          config.voice,
+          proxyUrl,
+          key,
         );
-        stdout = result.stdout;
-        responseType = proxyUrl ? 'prx' : 'ip';
         markProxySuccess(proxyUrl);
-        lastError = undefined;
-        break;
+        return {
+          index: subtitle.index,
+          buffer: null,
+          text: subtitle.targetText,
+          start: subtitle.start,
+          end: subtitle.end,
+          key,
+          url,
+          cached: false,
+          responseType: proxyUrl ? 'prx' : 'ip',
+          duration,
+        };
       } catch (error) {
         markProxyFailure(proxyUrl);
         if (proxyUrl) excludedProxies.add(proxyUrl);
@@ -298,54 +323,92 @@ export class DubbingService {
       }
     }
 
-    if (!stdout) {
-      throw lastError instanceof Error
-        ? lastError
-        : new Error('TTS generation failed');
-    }
-
-    let duration = 0;
-    try {
-      const metadata = await parseBuffer(stdout as Buffer, {
-        mimeType: 'audio/mpeg',
-      });
-      duration = metadata.format.duration || 0;
-    } catch (error) {}
-
-    return {
-      index: subtitle.index,
-      buffer: stdout as Buffer,
-      text: subtitle.targetText,
-      start: subtitle.start,
-      end: subtitle.end,
-      key,
-      url: '',
-      cached: false,
-      responseType,
-      duration,
-    };
+    throw lastError instanceof Error
+      ? lastError
+      : new Error('TTS generation failed');
   }
 
-  private async uploadGeneratedAudioFiles(audioFiles: AudioFile[]) {
-    const filesToUpload = audioFiles
-      .filter((audio) => !audio.cached && audio.buffer)
-      .map((audio) => ({
-        buffer: audio.buffer!,
-        key: audio.key,
-      }));
+  // Streams the python script's stdout straight into the S3 upload (and, via
+  // a second pipe, into the duration parser) instead of buffering the whole
+  // audio file in Node memory before uploading — keeps peak RAM bounded when
+  // many dubbing sessions run concurrently.
+  private streamTtsToStorage(
+    text: string,
+    voice: string,
+    proxyUrl: string,
+    key: string,
+  ): Promise<{ url: string; duration: number }> {
+    return new Promise((resolve, reject) => {
+      const child = spawn('python3', [this.SCRIPT_PATH, text, voice, proxyUrl]);
 
-    if (filesToUpload.length === 0) return;
+      const { stream: uploadStream, done: uploadDone, abort } =
+        this.storageService.createStreamUpload(key);
+      const metadataInput = new PassThrough();
+      child.stdout.pipe(uploadStream);
+      child.stdout.pipe(metadataInput);
 
-    const uploadedFiles =
-      await this.storageService.uploadBuffers(filesToUpload);
+      const durationPromise = parseStream(
+        metadataInput,
+        { mimeType: 'audio/mpeg' },
+        { duration: true },
+      )
+        .then((metadata) => metadata.format.duration || 0)
+        .catch(() => 0)
+        .finally(() => {
+          // music-metadata can stop reading once it has enough header data
+          // to compute duration, leaving the rest of the piped stream
+          // un-drained. Since metadataInput shares its source (child.stdout)
+          // with uploadStream, an un-drained metadataInput backpressures
+          // and stalls the upload pipe too — force-drain any leftover bytes.
+          metadataInput.resume();
+        });
 
-    audioFiles.forEach((audio) => {
-      if (!audio.cached) {
-        const uploaded = uploadedFiles.find((u) => u.key === audio.key);
-        if (uploaded) {
-          audio.url = uploaded.url;
+      let stderr = '';
+      child.stderr.on('data', (chunk: Buffer) => {
+        if (stderr.length < 4096) stderr += chunk.toString();
+      });
+
+      let settled = false;
+      const timeout = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        child.kill('SIGKILL');
+        void abort();
+        reject(new Error('TTS generation timed out'));
+      }, 90_000);
+
+      child.on('error', (error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        void abort();
+        reject(error);
+      });
+
+      child.on('close', (code) => {
+        if (code !== 0 && !settled) {
+          settled = true;
+          clearTimeout(timeout);
+          void abort();
+          reject(
+            new Error(stderr.trim() || `TTS process exited with code ${code}`),
+          );
         }
-      }
+      });
+
+      Promise.all([uploadDone, durationPromise])
+        .then(([url, duration]) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          resolve({ url, duration });
+        })
+        .catch((error) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          reject(error);
+        });
     });
   }
 
