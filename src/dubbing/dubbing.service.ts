@@ -573,38 +573,18 @@ export class DubbingService {
     const workDir = await mkdtemp(join(tmpdir(), 'yt-dlp-'));
 
     try {
-      let usedLanguage = resolvedLanguage;
-      let subtitles: Array<{
-        index: number;
-        start: number;
-        end: number;
-        text: string;
-      }>;
-
-      try {
-        subtitles = await this.runYtDlpWithRetry(
-          videoId,
-          resolvedLanguage,
-          workDir,
-        );
-      } catch (error) {
-        // Some videos only expose auto-translated captions under the
-        // "<lang>-en" key (translated from the English auto-caption track)
-        // instead of the plain 2-letter code.
-        const isPlainLanguageCode = /^[a-z]{2}$/.test(resolvedLanguage);
-        if (!(error instanceof NotFoundException) || !isPlainLanguageCode) {
-          throw error;
-        }
-        usedLanguage = `${resolvedLanguage}-en`;
-        subtitles = await this.runYtDlpWithRetry(videoId, usedLanguage, workDir);
-      }
+      const subtitles = await this.runYtDlpWithRetry(
+        videoId,
+        resolvedLanguage,
+        workDir,
+      );
 
       await this.db
         .update(dubbingLogs)
         .set({ fetchSubApi: 1 })
         .where(eq(dubbingLogs.id, dubbingLogId));
 
-      return { videoId, language: usedLanguage, subtitles };
+      return { videoId, language: resolvedLanguage, subtitles };
     } finally {
       await rm(workDir, { recursive: true, force: true });
     }
