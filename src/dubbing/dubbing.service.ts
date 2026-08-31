@@ -571,50 +571,87 @@ export class DubbingService {
 
     const resolvedLanguage = language ?? 'en';
     const workDir = await mkdtemp(join(tmpdir(), 'yt-dlp-'));
+
+    try {
+      let usedLanguage = resolvedLanguage;
+      let subtitles: Array<{
+        index: number;
+        start: number;
+        end: number;
+        text: string;
+      }>;
+
+      try {
+        subtitles = await this.runYtDlpWithRetry(
+          videoId,
+          resolvedLanguage,
+          workDir,
+        );
+      } catch (error) {
+        // Some videos only expose auto-translated captions under the
+        // "<lang>-en" key (translated from the English auto-caption track)
+        // instead of the plain 2-letter code.
+        const isPlainLanguageCode = /^[a-z]{2}$/.test(resolvedLanguage);
+        if (!(error instanceof NotFoundException) || !isPlainLanguageCode) {
+          throw error;
+        }
+        usedLanguage = `${resolvedLanguage}-en`;
+        subtitles = await this.runYtDlpWithRetry(videoId, usedLanguage, workDir);
+      }
+
+      await this.db
+        .update(dubbingLogs)
+        .set({ fetchSubApi: 1 })
+        .where(eq(dubbingLogs.id, dubbingLogId));
+
+      return { videoId, language: usedLanguage, subtitles };
+    } finally {
+      await rm(workDir, { recursive: true, force: true });
+    }
+  }
+
+  private async runYtDlpWithRetry(
+    videoId: string,
+    language: string,
+    workDir: string,
+  ): Promise<
+    Array<{ index: number; start: number; end: number; text: string }>
+  > {
     const excludedProxies = new Set<string>();
     const maxAttempts = Math.max(1, getProxyRetryCount() + 1);
     let lastError: unknown;
 
-    try {
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const proxyUrl = pickRandomProxy(excludedProxies, 'yt-dlp');
-        try {
-          await this.runYtDlp(videoId, resolvedLanguage, workDir, proxyUrl);
-          markProxySuccess(proxyUrl);
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const proxyUrl = pickRandomProxy(excludedProxies, 'yt-dlp');
+      try {
+        await this.runYtDlp(videoId, language, workDir, proxyUrl);
+        markProxySuccess(proxyUrl);
 
-          const vttFile = (await readdir(workDir)).find((name) =>
-            name.endsWith('.vtt'),
-          );
-          if (!vttFile) {
-            throw new NotFoundException(MessageCodes.SUBTITLE_NOT_FOUND);
-          }
-
-          const vttContent = await readFile(join(workDir, vttFile), 'utf8');
-          const subtitles = this.parseVtt(vttContent);
-          if (subtitles.length === 0) {
-            throw new NotFoundException(MessageCodes.SUBTITLE_NOT_FOUND);
-          }
-
-          await this.db
-            .update(dubbingLogs)
-            .set({ fetchSubApi: 1 })
-            .where(eq(dubbingLogs.id, dubbingLogId));
-
-          return { videoId, language: resolvedLanguage, subtitles };
-        } catch (error) {
-          if (error instanceof NotFoundException) throw error;
-          markProxyFailure(proxyUrl);
-          if (proxyUrl) excludedProxies.add(proxyUrl);
-          lastError = error;
+        const vttFile = (await readdir(workDir)).find((name) =>
+          name.endsWith('.vtt'),
+        );
+        if (!vttFile) {
+          throw new NotFoundException(MessageCodes.SUBTITLE_NOT_FOUND);
         }
-      }
 
-      throw lastError instanceof Error
-        ? lastError
-        : new BadRequestException(MessageCodes.SUBTITLE_FETCH_FAILED);
-    } finally {
-      await rm(workDir, { recursive: true, force: true });
+        const vttContent = await readFile(join(workDir, vttFile), 'utf8');
+        const subtitles = this.parseVtt(vttContent);
+        if (subtitles.length === 0) {
+          throw new NotFoundException(MessageCodes.SUBTITLE_NOT_FOUND);
+        }
+
+        return subtitles;
+      } catch (error) {
+        if (error instanceof NotFoundException) throw error;
+        markProxyFailure(proxyUrl);
+        if (proxyUrl) excludedProxies.add(proxyUrl);
+        lastError = error;
+      }
     }
+
+    throw lastError instanceof Error
+      ? lastError
+      : new BadRequestException(MessageCodes.SUBTITLE_FETCH_FAILED);
   }
 
   private runYtDlp(
