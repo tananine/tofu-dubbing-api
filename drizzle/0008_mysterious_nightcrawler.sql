@@ -1,0 +1,1 @@
+ALTER TABLE "dubbing_logs" ADD COLUMN "generate_started" integer;

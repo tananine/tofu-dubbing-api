@@ -106,17 +106,24 @@ export class DubbingService {
       generateDubbingDto;
 
     const [dubbingLog] = await this.db
-      .select({ id: dubbingLogs.id })
+      .select({
+        id: dubbingLogs.id,
+        generateStarted: dubbingLogs.generateStarted,
+      })
       .from(dubbingLogs)
       .where(
-        and(
-          eq(dubbingLogs.id, dubbingLogId),
-          eq(dubbingLogs.userId, userId),
-        ),
+        and(eq(dubbingLogs.id, dubbingLogId), eq(dubbingLogs.userId, userId)),
       )
       .limit(1);
     if (!dubbingLog) {
       throw new NotFoundException('dubbingLogNotFound');
+    }
+
+    if (!dubbingLog.generateStarted) {
+      await this.db
+        .update(dubbingLogs)
+        .set({ generateStarted: 1 })
+        .where(eq(dubbingLogs.id, dubbingLogId));
     }
 
     if (config.model && isAIModel(config.model)) {
@@ -156,10 +163,7 @@ export class DubbingService {
         .update(dubbingLogs)
         .set({ errorMessage: message.slice(0, 2000) })
         .where(
-          and(
-            eq(dubbingLogs.id, dubbingLogId),
-            eq(dubbingLogs.userId, userId),
-          ),
+          and(eq(dubbingLogs.id, dubbingLogId), eq(dubbingLogs.userId, userId)),
         );
       throw error;
     }
@@ -341,8 +345,11 @@ export class DubbingService {
     return new Promise((resolve, reject) => {
       const child = spawn('python3', [this.SCRIPT_PATH, text, voice, proxyUrl]);
 
-      const { stream: uploadStream, done: uploadDone, abort } =
-        this.storageService.createStreamUpload(key);
+      const {
+        stream: uploadStream,
+        done: uploadDone,
+        abort,
+      } = this.storageService.createStreamUpload(key);
       const metadataInput = new PassThrough();
       child.stdout.pipe(uploadStream);
       child.stdout.pipe(metadataInput);
@@ -463,10 +470,7 @@ export class DubbingService {
         completedAt: new Date(),
       })
       .where(
-        and(
-          eq(dubbingLogs.id, dubbingLogId),
-          eq(dubbingLogs.userId, userId),
-        ),
+        and(eq(dubbingLogs.id, dubbingLogId), eq(dubbingLogs.userId, userId)),
       );
 
     if (!usedAi || !model) return;

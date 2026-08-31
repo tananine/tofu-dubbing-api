@@ -83,6 +83,7 @@ export const dubbingLogs = pgTable('dubbing_logs', {
   audioDuration: real('audio_duration').notNull().default(0),
   completedAt: timestamp('completed_at'),
   errorMessage: text('error_message'),
+  generateStarted: integer('generate_started'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -100,8 +101,7 @@ export const subscriptionClickLogs = pgTable('subscription_click_logs', {
 });
 
 export type SubscriptionClickLog = typeof subscriptionClickLogs.$inferSelect;
-export type NewSubscriptionClickLog =
-  typeof subscriptionClickLogs.$inferInsert;
+export type NewSubscriptionClickLog = typeof subscriptionClickLogs.$inferInsert;
 
 export const subscriptionPageViews = pgTable('subscription_page_views', {
   id: serial('id').primaryKey(),
@@ -113,8 +113,7 @@ export const subscriptionPageViews = pgTable('subscription_page_views', {
 });
 
 export type SubscriptionPageView = typeof subscriptionPageViews.$inferSelect;
-export type NewSubscriptionPageView =
-  typeof subscriptionPageViews.$inferInsert;
+export type NewSubscriptionPageView = typeof subscriptionPageViews.$inferInsert;
 
 export const loginLogs = pgTable('login_logs', {
   id: serial('id').primaryKey(),
@@ -133,8 +132,9 @@ export const aiModelUsage = pgTable(
   'ai_model_usage',
   {
     id: serial('id').primaryKey(),
-    subscriptionId: integer('subscription_id')
-      .references(() => subscriptions.id),
+    subscriptionId: integer('subscription_id').references(
+      () => subscriptions.id,
+    ),
     userId: integer('user_id')
       .notNull()
       .references(() => users.id),
