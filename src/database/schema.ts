@@ -84,6 +84,7 @@ export const dubbingLogs = pgTable('dubbing_logs', {
   completedAt: timestamp('completed_at'),
   errorMessage: text('error_message'),
   generateStarted: integer('generate_started'),
+  fetchSubApi: integer('fetch_sub_api'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

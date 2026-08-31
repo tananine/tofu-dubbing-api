@@ -6,14 +6,18 @@ type ProxyHealth = {
 const proxyHealthMap = new Map<string, ProxyHealth>();
 const DEFAULT_COOLDOWN_MS = 5 * 60 * 1000;
 
-export type ProxyUsageContext = 'generate-voice' | 'voices-list';
+export type ProxyUsageContext = 'generate-voice' | 'voices-list' | 'yt-dlp';
+
+const PROXY_ENABLED_ENV_NAMES: Record<ProxyUsageContext, string> = {
+  'generate-voice': 'PROXY_GENERATE_VOICE_ENABLED',
+  'voices-list': 'PROXY_VOICES_LIST_ENABLED',
+  'yt-dlp': 'PROXY_YT_DLP_ENABLED',
+};
 
 function isProxyEnabled(context: ProxyUsageContext): boolean {
-  const envName =
-    context === 'generate-voice'
-      ? 'PROXY_GENERATE_VOICE_ENABLED'
-      : 'PROXY_VOICES_LIST_ENABLED';
-  const raw = (process.env[envName] ?? 'true').trim().toLowerCase();
+  const raw = (process.env[PROXY_ENABLED_ENV_NAMES[context]] ?? 'true')
+    .trim()
+    .toLowerCase();
   return !['false', '0', 'no', 'off'].includes(raw);
 }
 

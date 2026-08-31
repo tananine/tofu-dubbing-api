@@ -1,5 +1,6 @@
 import {
   Injectable,
+  BadRequestException,
   ForbiddenException,
   Inject,
   Logger,
@@ -7,6 +8,9 @@ import {
 } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { spawn } from 'child_process';
+import { mkdtemp, readdir, readFile, rm } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { PassThrough } from 'stream';
 import { parseStream } from 'music-metadata';
 import { and, eq, sql } from 'drizzle-orm';
@@ -58,6 +62,7 @@ export class DubbingService {
   private readonly logger = new Logger(DubbingService.name);
   private readonly CONCURRENT_LIMIT = 5;
   private readonly SCRIPT_PATH = 'scripts/edge-tts-generate.py';
+  private readonly YTDLP_COOKIES_FILE = process.env.YTDLP_COOKIES_FILE ?? '';
 
   constructor(
     private readonly storageService: StorageService,
@@ -541,5 +546,199 @@ export class DubbingService {
       audioFiles: audioFilesWithUrls,
       errors: errors.length > 0 ? errors : undefined,
     };
+  }
+
+  async fetchSubtitlesViaYtDlp(
+    dubbingLogId: number,
+    videoId: string,
+    language: string | undefined,
+    userId: number,
+  ): Promise<{
+    videoId: string;
+    language: string;
+    subtitles: Array<{ index: number; start: number; end: number; text: string }>;
+  }> {
+    const [dubbingLog] = await this.db
+      .select({ id: dubbingLogs.id })
+      .from(dubbingLogs)
+      .where(
+        and(eq(dubbingLogs.id, dubbingLogId), eq(dubbingLogs.userId, userId)),
+      )
+      .limit(1);
+    if (!dubbingLog) {
+      throw new NotFoundException(MessageCodes.SUBTITLE_NOT_FOUND);
+    }
+
+    const resolvedLanguage = language ?? 'en';
+    const workDir = await mkdtemp(join(tmpdir(), 'yt-dlp-'));
+    const excludedProxies = new Set<string>();
+    const maxAttempts = Math.max(1, getProxyRetryCount() + 1);
+    let lastError: unknown;
+
+    try {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const proxyUrl = pickRandomProxy(excludedProxies, 'yt-dlp');
+        try {
+          await this.runYtDlp(videoId, resolvedLanguage, workDir, proxyUrl);
+          markProxySuccess(proxyUrl);
+
+          const vttFile = (await readdir(workDir)).find((name) =>
+            name.endsWith('.vtt'),
+          );
+          if (!vttFile) {
+            throw new NotFoundException(MessageCodes.SUBTITLE_NOT_FOUND);
+          }
+
+          const vttContent = await readFile(join(workDir, vttFile), 'utf8');
+          const subtitles = this.parseVtt(vttContent);
+          if (subtitles.length === 0) {
+            throw new NotFoundException(MessageCodes.SUBTITLE_NOT_FOUND);
+          }
+
+          await this.db
+            .update(dubbingLogs)
+            .set({ fetchSubApi: 1 })
+            .where(eq(dubbingLogs.id, dubbingLogId));
+
+          return { videoId, language: resolvedLanguage, subtitles };
+        } catch (error) {
+          if (error instanceof NotFoundException) throw error;
+          markProxyFailure(proxyUrl);
+          if (proxyUrl) excludedProxies.add(proxyUrl);
+          lastError = error;
+        }
+      }
+
+      throw lastError instanceof Error
+        ? lastError
+        : new BadRequestException(MessageCodes.SUBTITLE_FETCH_FAILED);
+    } finally {
+      await rm(workDir, { recursive: true, force: true });
+    }
+  }
+
+  private runYtDlp(
+    videoId: string,
+    language: string,
+    workDir: string,
+    proxyUrl: string,
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const args = [
+        '--skip-download',
+        '--write-subs',
+        '--write-auto-subs',
+        '--sub-langs',
+        language,
+        '--sub-format',
+        'vtt',
+        '--convert-subs',
+        'vtt',
+        '-o',
+        join(workDir, '%(id)s.%(ext)s'),
+      ];
+
+      if (proxyUrl) args.push('--proxy', proxyUrl);
+      if (this.YTDLP_COOKIES_FILE) {
+        // android/web_safari clients don't accept cookie auth well; let
+        // yt-dlp use its default (web) client so the cookies are honored.
+        args.push('--cookies', this.YTDLP_COOKIES_FILE);
+      } else {
+        args.push(
+          '--extractor-args',
+          'youtube:player_client=android,web_safari',
+        );
+      }
+
+      args.push('--', `https://www.youtube.com/watch?v=${videoId}`);
+
+      const child = spawn('yt-dlp', args);
+
+      let stderr = '';
+      child.stderr.on('data', (chunk: Buffer) => {
+        if (stderr.length < 4096) stderr += chunk.toString();
+      });
+
+      let settled = false;
+      const timeout = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        child.kill('SIGKILL');
+        reject(new BadRequestException(MessageCodes.SUBTITLE_FETCH_FAILED));
+      }, 30_000);
+
+      child.on('error', () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        reject(new BadRequestException(MessageCodes.SUBTITLE_FETCH_FAILED));
+      });
+
+      child.on('close', (code) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        if (code !== 0) {
+          this.logger.warn(
+            `yt-dlp failed for videoId=${videoId} lang=${language}: ${stderr.trim()}`,
+          );
+          reject(new BadRequestException(MessageCodes.SUBTITLE_FETCH_FAILED));
+          return;
+        }
+        resolve();
+      });
+    });
+  }
+
+  private parseVtt(
+    content: string,
+  ): Array<{ index: number; start: number; end: number; text: string }> {
+    const timeToSeconds = (time: string): number => {
+      const [h, m, s] = time.replace(',', '.').split(':');
+      return Number(h) * 3600 + Number(m) * 60 + Number(s);
+    };
+
+    const stripTags = (line: string): string =>
+      line
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .trim();
+
+    const cueTimeRegex =
+      /(\d{2}:\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3})/;
+
+    const blocks = content.replace(/\r/g, '').split('\n\n');
+    const cues: Array<{ index: number; start: number; end: number; text: string }> =
+      [];
+    let lastText = '';
+
+    for (const block of blocks) {
+      const lines = block.split('\n').filter(Boolean);
+      const timeLine = lines.find((line) => cueTimeRegex.test(line));
+      if (!timeLine) continue;
+
+      const match = timeLine.match(cueTimeRegex);
+      if (!match) continue;
+
+      const text = lines
+        .slice(lines.indexOf(timeLine) + 1)
+        .map(stripTags)
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+
+      if (!text || text === lastText) continue;
+      lastText = text;
+
+      cues.push({
+        index: cues.length,
+        start: timeToSeconds(match[1]),
+        end: timeToSeconds(match[2]),
+        text,
+      });
+    }
+
+    return cues;
   }
 }

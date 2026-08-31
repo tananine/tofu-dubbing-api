@@ -1,0 +1,70 @@
+meta {
+  name: fetch subtitles
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{url}}/api/dubbing/subtitles/fetch
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "dubbingLogId": 84136,
+    "videoId": "f1gkkzHZxNg",
+    "language": "en"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+docs {
+  # Fetch Subtitles (yt-dlp fallback)
+  
+  Fallback endpoint used when the extension can't scrape subtitles directly
+  from the YouTube page (e.g. captions load async, page structure changed).
+  Server-side fetches captions via `yt-dlp` and returns parsed cues.
+  
+  ## Endpoint
+  POST /api/dubbing/subtitles/fetch
+  
+  ## Authentication
+  **Required** - Must include Bearer token in Authorization header
+  
+  ## Request Body
+  ```json
+  {
+    "dubbingLogId": 123,
+    "videoId": "youtube_video_id",
+    "language": "en"
+  }
+  ```
+  
+  - `dubbingLogId`: ID returned by `/api/dubbing/start`; must belong to the authenticated user. On success, marks `fetch_sub_api = 1` on this dubbing log row.
+  - `videoId`: YouTube video ID (alphanumeric, `-`, `_`, 1-32 chars)
+  - `language` (optional): Subtitle language code to request, defaults to `en`
+  
+  ## Response (200/201)
+  ```json
+  {
+    "videoId": "nWwvRuPQois",
+    "language": "en",
+    "subtitles": [
+      { "index": 0, "start": 0.5, "end": 3.2, "text": "..." }
+    ]
+  }
+  ```
+  
+  ## Error Responses
+  - **401 Unauthorized**: Missing or invalid token
+  - **400 Bad Request**: Invalid videoId/language, or `subtitleFetchFailed` when yt-dlp fails/times out
+  - **404 Not Found**: `subtitleNotFound` when no captions are available in the requested language
+  
+  ## Use Cases
+  - Backup subtitle source when frontend scraping fails
+}

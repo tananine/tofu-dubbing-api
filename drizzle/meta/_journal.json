@@ -64,6 +64,13 @@
       "when": 1788017541010,
       "tag": "0008_mysterious_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788183102362,
+      "tag": "0009_shiny_cobalt_man",
+      "breakpoints": true
     }
   ]
 }

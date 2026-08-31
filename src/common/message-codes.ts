@@ -13,6 +13,8 @@ export const MessageCodes = {
   INVALID_SIGNATURE: 'invalidSignature',
   UNKNOWN_ERROR: 'unknownError',
   DUBBING_GENERATION_COMPLETED: 'dubbingGenerationCompleted',
+  SUBTITLE_FETCH_FAILED: 'subtitleFetchFailed',
+  SUBTITLE_NOT_FOUND: 'subtitleNotFound',
 } as const;
 
 export type MessageCode = (typeof MessageCodes)[keyof typeof MessageCodes];

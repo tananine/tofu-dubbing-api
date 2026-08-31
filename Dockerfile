@@ -15,9 +15,11 @@ FROM node:20-slim AS runner
 WORKDIR /app
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends python3 python3-pip \
- && pip3 install --no-cache-dir --break-system-packages edge-tts \
+ && apt-get install -y --no-install-recommends python3 python3-pip curl unzip \
+ && pip3 install --no-cache-dir --break-system-packages edge-tts "yt-dlp[default]" \
+ && curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh \
  && npm install -g pm2 \
+ && apt-get purge -y --auto-remove curl unzip \
  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/node_modules ./node_modules
