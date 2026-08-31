@@ -566,7 +566,7 @@ export class DubbingService {
       )
       .limit(1);
     if (!dubbingLog) {
-      throw new NotFoundException(MessageCodes.SUBTITLE_NOT_FOUND);
+      throw new NotFoundException('dubbingLogNotFound');
     }
 
     const resolvedLanguage = language ?? 'en';
